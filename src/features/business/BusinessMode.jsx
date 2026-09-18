@@ -4,9 +4,9 @@ import { fmt, fmtDate, r2 } from '../../engine/calc.js';
 import { Card, Stat, Tabs, Table, TR, TD, Badge, Empty, Btn, Alert } from '../../components/ui/index.jsx';
 
 const BIZ_TABS = [
-  ['dash','📊 Today'],['txn','📦 Transactions'],
-  ['money','💰 Money'],['reports','📈 Reports'],
-  ['po','📋 PO'],['payroll','💰 Payroll'],
+  ['dash','Overview'],['txn','Transactions'],
+  ['money','Cash Flow'],['reports','Reports'],
+  ['po','Purchase Orders'],['payroll','Payroll'],
 ];
 
 export default function BusinessMode() {
@@ -34,7 +34,7 @@ export default function BusinessMode() {
           <Card>
             <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Recent Invoices</div>
             {invoices.length===0
-              ? <Empty icon="🧾" title="No invoices yet" />
+              ? <Empty title="No invoices yet" />
               : <Table headers={['Invoice','Customer','Date','Amount','Status']}>
                   {invoices.slice(0,10).map(inv=>(
                     <TR key={inv.id}>

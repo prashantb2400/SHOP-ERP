@@ -38,13 +38,13 @@ function AppInner() {
   },[]);
 
   if(auth.loading) return (
-    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'var(--bg)',gap:20}}>
-      <div style={{fontSize:32,fontWeight:800,color:'var(--tx)'}}>Retail<span style={{color:'var(--acc)'}}>Flow</span></div>
-      <div className="spinner" />
-      <div style={{color:'var(--tx2)',fontSize:13}}>Connecting…</div>
-      <button onClick={goOffline}
-        style={{marginTop:8,padding:'8px 20px',border:'1.5px solid var(--acc)',borderRadius:8,background:'var(--acb)',color:'var(--acc)',cursor:'pointer',fontSize:13,fontWeight:700}}>
-        ✈️ Use Offline
+    <div style={{minHeight:'100dvh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'var(--bg)',gap:20}}>
+      <div style={{fontSize:32,fontWeight:800,color:'var(--tx)',letterSpacing:'-0.03em'}}>Retail<span style={{color:'var(--acc)'}}>Flow</span></div>
+      <div className="skeleton" style={{width:160,height:6,borderRadius:99}} />
+      <div style={{color:'var(--tx2)',fontSize:12.5,fontWeight:600}}>Connecting to workspace…</div>
+      <button onClick={goOffline} className="btn btn-ghost"
+        style={{marginTop:8,padding:'8px 20px',fontSize:12.5,fontWeight:600}}>
+        Continue Offline
       </button>
     </div>
   );

@@ -15,19 +15,19 @@ export default function InventoryMode() {
         <div>
           <h2 style={{fontSize:20,fontWeight:800}}>Stock / Item Master</h2>
           <div style={{fontSize:12,color:'var(--tx2)'}}>
-            {inventory.length} items {gdwFilter&&`· 📍 ${gdwFilter}`}
-            {lowStock.length>0&&<span style={{color:'var(--red)',marginLeft:8}}>· {lowStock.length} low stock ⚠️</span>}
+            {inventory.length} items {gdwFilter&&`· Godown: ${gdwFilter}`}
+            {lowStock.length>0&&<span style={{color:'var(--red)',marginLeft:8}}>· {lowStock.length} low stock</span>}
           </div>
         </div>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-          <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'godowns'})}>🏭 Godowns</Btn>
-          <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'import',importPreview:null})}>📥 Import CSV</Btn>
+          <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'godowns'})}>Godowns</Btn>
+          <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'import',importPreview:null})}>Import CSV</Btn>
           {gdwFilter&&<Btn v="acc" sz="sm" onClick={()=>patch({gdwFilter:''})}>✕ {gdwFilter}</Btn>}
         </div>
       </div>
 
       {lowStock.length>0&&<Alert v="warn" style={{marginBottom:12}}>
-        ⚠️ Low stock: {lowStock.map(i=><b key={i.id} style={{marginRight:6}}>{i.name} ({i.stock})</b>)}
+        Low stock alert: {lowStock.map(i=><b key={i.id} style={{marginRight:6}}>{i.name} ({i.stock})</b>)}
       </Alert>}
 
       {invTab==='godowns' ? <GodownView /> :
@@ -36,7 +36,7 @@ export default function InventoryMode() {
           <ItemForm />
           <BatchModal />
           {filtered.length===0
-            ? <Empty icon="📦" title={gdwFilter?`No items in ${gdwFilter}`:'No items yet'} sub="Add items above to use in invoices" />
+            ? <Empty title={gdwFilter?`No items in ${gdwFilter}`:'No items yet'} sub="Add items above to use in invoices" />
             : <ItemTable items={filtered} />}
         </>
       )}
@@ -73,7 +73,7 @@ function ItemForm() {
               background:f.item_type===t?'var(--acb)':'transparent',
               border:`1.5px solid ${f.item_type===t?'var(--acc)':'var(--bor)'}`,
               color:f.item_type===t?'var(--acc)':'var(--tx2)'}}>
-            {t==='product'?'📦 Product':'🛠 Service'}
+            {t==='product'?'Product':'Service'}
           </button>
         ))}
       </div>
@@ -113,7 +113,7 @@ function ItemForm() {
         <Field label="Barcode / SKU">
           <div style={{display:'flex',gap:6}}>
             <input className="input" value={f.barcode||''} onChange={e=>upd({barcode:e.target.value})} placeholder="Auto-gen or type" style={{flex:1}} />
-            <Btn v="acc" sz="sm" onClick={()=>upd({barcode:String(Math.floor(Math.random()*90000000+10000000))})}>⚡</Btn>
+            <Btn v="acc" sz="sm" onClick={()=>upd({barcode:String(Math.floor(Math.random()*90000000+10000000))})}>Gen</Btn>
           </div>
         </Field>
         <Field label="Godown">
@@ -141,7 +141,7 @@ function ItemTable({ items }) {
             <div style={{fontWeight:600}}>{item.name}</div>
             <div style={{display:'flex',gap:4,marginTop:2,flexWrap:'wrap'}}>
               {item.category&&<Badge v="default">{item.category}</Badge>}
-              {item.godown&&item.godown!=='Main'&&<Badge v="acc">📍 {item.godown}</Badge>}
+              {item.godown&&item.godown!=='Main'&&<Badge v="acc">{item.godown}</Badge>}
               {item.batches?.length>0&&<Badge v="blue">{item.batches.length} batch</Badge>}
               {isReg&&item.hsn&&<span style={{fontSize:10,color:'var(--tx2)',fontFamily:'var(--ffm)'}}>HSN:{item.hsn}</span>}
             </div>
@@ -154,20 +154,20 @@ function ItemTable({ items }) {
             <div style={{fontWeight:600,color:Number(item.stock)<=Number(item.low_stock_alert??5)?'var(--red)':'var(--tx)'}}>
               {item.stock} {item.unit}
             </div>
-            {Number(item.stock)<=Number(item.low_stock_alert??5)&&<div style={{fontSize:10,color:'var(--red)'}}>⚠️ Low</div>}
+            {Number(item.stock)<=Number(item.low_stock_alert??5)&&<div style={{fontSize:10,color:'var(--red)'}}>Low</div>}
           </TD>
           <TD style={{fontFamily:'var(--ffm)',fontSize:11,color:'var(--tx2)'}}>{item.barcode||'—'}</TD>
           <TD>
-            <div style={{display:'flex',gap:4}}>
-              <Btn v="ghost" sz="sm" onClick={()=>patch({invItemForm:{...item}})}>✏️</Btn>
-              {item.item_type!=='service'&&<Btn v="ghost" sz="sm" onClick={()=>patch({batchItemId:item.id,batchForm:{batch_no:'',mfg_date:'',exp_date:'',qty:0,purchase_rate:0}})} title="Batches">📦{item.batches?.length>0?` ${item.batches.length}`:''}</Btn>}
+            <div style={{display:'flex',gap:6}}>
+              <Btn v="ghost" sz="sm" onClick={()=>patch({invItemForm:{...item}})}>Edit</Btn>
+              {item.item_type!=='service'&&<Btn v="ghost" sz="sm" onClick={()=>patch({batchItemId:item.id,batchForm:{batch_no:'',mfg_date:'',exp_date:'',qty:0,purchase_rate:0}})} title="Batches">Batches{item.batches?.length>0?` (${item.batches.length})`:''}</Btn>}
               <Btn v="red" sz="sm" onClick={async()=>{
                   if(!confirm('Delete '+item.name+'?'))return;
                   const iid=item.id;
                   patch(s=>({inventory:s.inventory.filter(i=>i.id!==iid)}));
                   await save();
                   toast('Deleted','info');
-                }}>🗑️</Btn>
+                }}>Delete</Btn>
             </div>
           </TD>
         </TR>

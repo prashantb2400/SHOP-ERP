@@ -4,8 +4,8 @@ import { fmt, fmtDate, r2 } from '../../engine/calc.js';
 import { Card, Stat, Tabs, Table, TR, TD, Badge, Empty, Btn, Alert, toast } from '../../components/ui/index.jsx';
 
 const GST_TABS = [
-  ['gstr1','📋 GSTR-1'],['3b','📊 GSTR-3B'],['itc','🧾 ITC Register'],
-  ['cdnr','📄 CN/DN'],['gstr2b','🔄 GSTR-2B Recon'],['trail','🔍 Audit Trail'],
+  ['gstr1','GSTR-1'],['3b','GSTR-3B'],['itc','ITC Register'],
+  ['cdnr','CN / DN'],['gstr2b','GSTR-2B Recon'],['trail','Audit Trail'],
 ];
 
 export default function GSTMode() {
@@ -44,7 +44,7 @@ function GSTR1View() {
       </div>
       <Card>
         <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>B2B — Invoices with Buyer GSTIN</div>
-        {b2b.length===0 ? <Empty icon="📋" title="No B2B invoices" /> :
+        {b2b.length===0 ? <Empty title="No B2B invoices" /> :
           <Table headers={['Invoice No.','Customer','GSTIN','Date','Taxable','GST','Total']}>
             {b2b.slice(0,100).map(inv=>(
               <TR key={inv.id}>
@@ -124,16 +124,16 @@ function CDNRView() {
   return (
     <div>
       <div className="stats stats-2" style={{marginBottom:16}}>
-        <Stat label="📄 Credit Notes" value={all.filter(n=>n.type!=='debit').length} sub={fmt(cnAmt)+' · reduces GST liability'} color="var(--grn)" />
-        <Stat label="📝 Debit Notes"  value={all.filter(n=>n.type==='debit').length}  sub={fmt(dnAmt)+' · increases GST liability'} color="var(--ylw)" />
+        <Stat label="Credit Notes" value={all.filter(n=>n.type!=='debit').length} sub={fmt(cnAmt)+' · reduces GST liability'} color="var(--grn)" />
+        <Stat label="Debit Notes"  value={all.filter(n=>n.type==='debit').length}  sub={fmt(dnAmt)+' · increases GST liability'} color="var(--ylw)" />
       </div>
-      <Tabs tabs={[['cn','📄 Credit Notes'],['dn','📝 Debit Notes'],['all','📋 All']]} active={cdnrSubTab} onChange={t=>patch({cdnrSubTab:t})} />
-      {shown.length===0 ? <Empty icon="📄" title="No notes yet" /> :
+      <Tabs tabs={[['cn','Credit Notes'],['dn','Debit Notes'],['all','All']]} active={cdnrSubTab} onChange={t=>patch({cdnrSubTab:t})} />
+      {shown.length===0 ? <Empty title="No notes yet" /> :
         <Table headers={['No.','Type','Customer','Against','Date','Amount']}>
           {shown.map(n=>(
             <TR key={n.id}>
               <TD style={{color:'var(--acc)',fontWeight:700,fontSize:11}}>{n.cn_no||'—'}</TD>
-              <TD><Badge v={n.type==='debit'?'yellow':'blue'}>{n.type==='debit'?'📝 DN':'📄 CN'}</Badge></TD>
+              <TD><Badge v={n.type==='debit'?'yellow':'blue'}>{n.type==='debit'?'DN':'CN'}</Badge></TD>
               <TD>{n.customer_name||'—'}</TD>
               <TD style={{fontSize:11,color:'var(--tx2)'}}>{n.original_invoice_no||'—'}</TD>
               <TD style={{color:'var(--tx2)'}}>{fmtDate(n.date)}</TD>
@@ -195,7 +195,6 @@ function GSTR2BView() {
 
   if(!gstr2bData) return (
     <div style={{maxWidth:480,margin:'0 auto',textAlign:'center',padding:'48px 16px'}}>
-      <div style={{fontSize:48,marginBottom:12}}>🔄</div>
       <h3 style={{fontWeight:800,fontSize:18,marginBottom:8}}>GSTR-2B Reconciliation</h3>
       <p style={{color:'var(--tx2)',fontSize:13,marginBottom:20}}>Upload your GSTR-2B JSON from the GST portal to identify ITC at risk.</p>
       <Alert v="info" style={{textAlign:'left',marginBottom:20,fontSize:12}}>
@@ -205,7 +204,7 @@ function GSTR2BView() {
       </Alert>
       <label style={{cursor:'pointer',display:'inline-flex',alignItems:'center',gap:8,padding:'12px 24px',
         background:'var(--acc)',color:'#fff',borderRadius:10,fontWeight:700,fontSize:14}}>
-        📂 Upload GSTR-2B JSON
+        Upload GSTR-2B JSON
         <input ref={fileRef} type="file" accept=".json" onChange={handleFile} style={{display:'none'}} />
       </label>
     </div>
@@ -220,18 +219,18 @@ function GSTR2BView() {
       <div style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',alignItems:'center',gap:10,marginBottom:16}}>
         <div style={{fontWeight:700}}>{display.length} entries</div>
         <div style={{display:'flex',gap:8}}>
-          {!gstr2bResults&&<Btn v="pri" sz="sm" onClick={runRecon}>▶ Run Reconciliation</Btn>}
-          <label style={{cursor:'pointer'}}><Btn v="ghost" sz="sm" as="span">📂 New File</Btn><input type="file" accept=".json" onChange={handleFile} style={{display:'none'}}/></label>
-          <Btn v="ghost" sz="sm" onClick={()=>patch({gstr2bData:null,gstr2bResults:null})}>✕ Clear</Btn>
+          {!gstr2bResults&&<Btn v="pri" sz="sm" onClick={runRecon}>Run Reconciliation</Btn>}
+          <label style={{cursor:'pointer'}}><Btn v="ghost" sz="sm" as="span">New File</Btn><input type="file" accept=".json" onChange={handleFile} style={{display:'none'}}/></label>
+          <Btn v="ghost" sz="sm" onClick={()=>patch({gstr2bData:null,gstr2bResults:null})}>Clear</Btn>
         </div>
       </div>
       <div className="stats stats-4" style={{marginBottom:16}}>
         <Stat label="Total ITC in 2B" value={fmt(display.reduce((a,r)=>a+r.gst_amount,0))} />
-        <Stat label="✓ Matched"  value={display.filter(r=>r.match_status==='matched').length} color="var(--grn)" />
-        <Stat label="✗ Unmatched" value={display.filter(r=>r.match_status!=='matched').length} color="var(--red)" />
-        <Stat label="⚠ ITC at Risk" value={fmt(itcRisk)} color="var(--red)" />
+        <Stat label="Matched"  value={display.filter(r=>r.match_status==='matched').length} color="var(--grn)" />
+        <Stat label="Unmatched" value={display.filter(r=>r.match_status!=='matched').length} color="var(--red)" />
+        <Stat label="ITC at Risk" value={fmt(itcRisk)} color="var(--red)" />
       </div>
-      {itcRisk>0&&<Alert v="warn" style={{marginBottom:12}}>⚠️ <b>{fmt(itcRisk)}</b> ITC at risk — add missing purchases to claim ITC.</Alert>}
+      {itcRisk>0&&<Alert v="warn" style={{marginBottom:12}}><b>{fmt(itcRisk)}</b> ITC at risk — add missing purchases to claim ITC.</Alert>}
       <div style={{display:'flex',gap:6,marginBottom:12}}>
         {['all','matched','unmatched','risk'].map(f=>(
           <button key={f} onClick={()=>patch({gstr2bFilter:f})}
@@ -252,7 +251,7 @@ function GSTR2BView() {
             <TD right>{fmt(r.taxable)}</TD>
             <TD right style={{fontWeight:700,color:r.itc_at_risk?'var(--red)':'var(--grn)'}}>{fmt(r.gst_amount)}</TD>
             <TD><Badge v={r.match_status==='matched'?'green':r.itc_at_risk?'red':'default'}>
-              {r.match_status==='matched'?'✓ Matched':r.itc_at_risk?'⚠ At Risk':'Pending'}
+              {r.match_status==='matched'?'Matched':r.itc_at_risk?'At Risk':'Pending'}
             </Badge></TD>
           </TR>
         ))}
@@ -263,7 +262,7 @@ function GSTR2BView() {
 
 function AuditView() {
   const { audit_log } = useStore();
-  if(!audit_log?.length) return <Empty icon="🔍" title="No audit entries" sub="All changes are logged here" />;
+  if(!audit_log?.length) return <Empty title="No audit entries" sub="All changes are logged here" />;
   return (
     <Table headers={['Time','User','Action','Type','Reference','Amount']}>
       {audit_log.slice(0,200).map((e,i)=>(

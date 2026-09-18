@@ -21,17 +21,17 @@ export const UNITS = [
 export const GST_RATES = [0, 0.1, 0.25, 1, 1.5, 3, 5, 6, 7.5, 12, 18, 28];
 
 export const BUSINESS_NATURES = [
-  { value:'retail',     label:'🛒 Retail / Kirana' },
-  { value:'wholesale',  label:'📦 Wholesale / Distributor' },
-  { value:'service',    label:'🛠 Service Provider' },
-  { value:'contractor', label:'🏗 Contractor / Builder' },
-  { value:'firm',       label:'🏢 Firm / Professional' },
+  { value:'retail',     label:'Retail / Kirana' },
+  { value:'wholesale',  label:'Wholesale / Distributor' },
+  { value:'service',    label:'Service Provider' },
+  { value:'contractor', label:'Contractor / Builder' },
+  { value:'firm',       label:'Firm / Professional' },
 ];
 
 export const ROLE_DEFS = {
-  admin:   { label:'Admin',   emoji:'👑' },
-  billing: { label:'Billing', emoji:'🧾' },
-  viewer:  { label:'Viewer',  emoji:'👁'  },
+  admin:   { label:'Admin' },
+  billing: { label:'Billing' },
+  viewer:  { label:'Viewer' },
 };
 
 export const DEFAULT_LEDGERS = {

@@ -34,28 +34,32 @@ export function InvoiceList() {
       </div>
 
       {/* Search */}
-      <div style={{position:'relative',marginBottom:10}}>
-        <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--tx2)'}}>🔍</span>
+      <div style={{position:'relative',marginBottom:12}}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--tx3)'}}>
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
         <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search customer, invoice#, amount…"
-          className="input" style={{paddingLeft:34}} />
+          className="input" style={{paddingLeft:36}} />
       </div>
 
       {/* Filters */}
       <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:16}}>
         {FILTERS.map(f=>(
           <button key={f} onClick={()=>patch({invFilter:f})}
-            style={{padding:'4px 12px',fontSize:11,fontWeight:600,borderRadius:99,cursor:'pointer',
+            style={{padding:'5px 14px',fontSize:11.5,fontWeight:600,borderRadius:99,cursor:'pointer',
               background:invFilter===f?'var(--acc)':'transparent',
-              border:`1.5px solid ${invFilter===f?'var(--acc)':'var(--bor)'}`,
-              color:invFilter===f?'#fff':'var(--tx2)'}}>
+              border:`1px solid ${invFilter===f?'var(--acc)':'var(--bor)'}`,
+              color:invFilter===f?'#fff':'var(--tx2)',
+              transition:'all 140ms ease'}}>
             {f.charAt(0).toUpperCase()+f.slice(1)}
           </button>
         ))}
       </div>
 
       {list.length===0
-        ? <Empty icon="🧾" title="No invoices" sub="Create your first invoice"
-            action={<Btn v="pri" sz="sm" onClick={()=>patch({tab:'create',invForm:blankInv()})}>+ New Invoice</Btn>} />
+        ? <Empty title="No invoices found" sub="Create your first invoice to get started"
+            action={<Btn v="pri" sz="sm" onClick={()=>patch({tab:'create',invForm:blankInv()})}>New Invoice</Btn>} />
         : <Table headers={['Invoice No.','Customer','Date','Total','Status','']}>
             {list.map(inv=>(
               <TR key={inv.id} onClick={()=>patch({viewInv:inv,tab:'view'})}>
@@ -138,16 +142,16 @@ export function InvoiceCreate() {
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
           <div className={`qm-toggle${invQuickMode?' on':''}`} onClick={store.toggleQuick}>
             <span className="qm-dot" />
-            <span style={{fontSize:12}}>{invQuickMode?'⚡ Quick Bill — essentials only':'🔧 Full Form — all fields'}</span>
+            <span style={{fontSize:12}}>{invQuickMode?'Quick Bill — essentials only':'Full Form — all fields'}</span>
           </div>
-          <div style={{display:'flex',gap:6,fontSize:10,color:'var(--tx2)'}}>
-            <span>⌨ <kbd style={{background:'var(--surf2)',border:'1px solid var(--bor)',borderRadius:3,padding:'1px 4px',fontFamily:'monospace',fontSize:9}}>Ctrl+↵</kbd> Save &amp; New</span>
+          <div style={{display:'flex',gap:6,fontSize:11,color:'var(--tx2)'}}>
+            <span>Keyboard shortcut: <kbd style={{background:'var(--surf2)',border:'1px solid var(--bor)',borderRadius:4,padding:'2px 5px',fontFamily:'var(--ffm)',fontSize:10}}>Ctrl+↵</kbd> Save &amp; New</span>
           </div>
         </div>
 
         {/* Customer + Date */}
         <Card>
-          <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:12}}>👤 Customer</div>
+          <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:12}}>Customer Information</div>
           <div className="g2" style={{marginBottom:10}}>
             <Field label="Customer Name" required>
               <input className="input" value={f.customer_name} list="cust-ac"
@@ -187,9 +191,9 @@ export function InvoiceCreate() {
 
         {/* Payment type */}
         <Card>
-          <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:10}}>💳 Payment</div>
+          <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:10}}>Payment Method</div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {[['cash','💵 Cash'],['online','🌐 Online / UPI'],['credit','📒 Credit']].map(([v,l])=>(
+            {[['cash','Cash'],['online','Online / UPI'],['credit','Credit']].map(([v,l])=>(
               <button key={v} onClick={()=>upd({payment_method:v})}
                 style={{padding:'8px 16px',fontSize:12,fontWeight:600,borderRadius:8,cursor:'pointer',
                   background:f.payment_method===v?'var(--acb)':'transparent',
@@ -203,7 +207,7 @@ export function InvoiceCreate() {
 
         {/* Items */}
         <Card>
-          <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:10}}>📦 Items</div>
+          <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:10}}>Line Items</div>
 
           {/* Recent chips */}
           {recent.length>0 && (
@@ -346,11 +350,11 @@ export function InvoiceCreate() {
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           <Btn v="pri" sz="lg" onClick={()=>save(false)} className="w-full" style={{justifyContent:'center',width:'100%'}}>
-            💾 Save Invoice
+            Save Invoice
           </Btn>
           <div style={{display:'flex',gap:8}}>
-            <Btn v="ghost" sz="sm" onClick={()=>save(true)} style={{flex:1,justifyContent:'center'}}>+ Save &amp; New</Btn>
-            <Btn v="ghost" sz="sm" onClick={()=>patch({invForm:blankInv()})} style={{flex:1,justifyContent:'center'}}>🗑 Clear</Btn>
+            <Btn v="ghost" sz="sm" onClick={()=>save(true)} style={{flex:1,justifyContent:'center'}}>Save &amp; New</Btn>
+            <Btn v="ghost" sz="sm" onClick={()=>patch({invForm:blankInv()})} style={{flex:1,justifyContent:'center'}}>Clear</Btn>
           </div>
         </div>
       </Card>

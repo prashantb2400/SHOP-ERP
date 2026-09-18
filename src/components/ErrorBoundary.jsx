@@ -31,16 +31,14 @@ export default class ErrorBoundary extends React.Component {
             border:'1px solid #e2e6f0', borderRadius:8, padding:12, wordBreak:'break-word'}}>
             {err?.message || String(err)}
           </div>
-          <div style={{display:'flex', gap:10}}>
+          <div style={{display:'flex', gap:10, flexWrap:'wrap', justifyContent:'center'}}>
             <button onClick={()=>{ this.setState({error:null}); }}
-              style={{padding:'10px 20px', borderRadius:8, border:'1.5px solid #2563eb',
-                background:'#eff6ff', color:'#2563eb', fontWeight:700, cursor:'pointer', fontSize:13}}>
-              ↩ Try Again
+              className="btn btn-pri" style={{padding:'8px 18px', fontSize:12.5}}>
+              Try Again
             </button>
             <button onClick={()=>{ window.location.reload(); }}
-              style={{padding:'10px 20px', borderRadius:8, border:'1.5px solid #e2e6f0',
-                background:'#fff', color:'#0f1421', fontWeight:700, cursor:'pointer', fontSize:13}}>
-              🔄 Reload Page
+              className="btn btn-ghost" style={{padding:'8px 18px', fontSize:12.5}}>
+              Reload Page
             </button>
             <button onClick={()=>{
                 try {
@@ -49,9 +47,8 @@ export default class ErrorBoundary extends React.Component {
                 } catch {}
                 window.location.reload();
               }}
-              style={{padding:'10px 20px', borderRadius:8, border:'1.5px solid #dc2626',
-                background:'#fef2f2', color:'#dc2626', fontWeight:700, cursor:'pointer', fontSize:13}}>
-              🗑 Reset Local Data
+              className="btn btn-red" style={{padding:'8px 18px', fontSize:12.5}}>
+              Reset Local Data
             </button>
           </div>
           <div style={{fontSize:11, color:'#8b949e', marginTop:8}}>

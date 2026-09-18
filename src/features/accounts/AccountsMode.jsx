@@ -5,10 +5,10 @@ import { buildJournals, buildTrialBalance } from '../../engine/journals.js';
 import { Card, Tabs, Table, TR, TD, Badge, Empty, Btn, Alert, Stat, Field, toast } from '../../components/ui/index.jsx';
 
 const AC_TABS = [
-  ['daybook','📓 Day Book'],['cashbook','💵 Cash Book'],
-  ['trialbal','⚖️ Trial Balance'],['balsheet','📊 Balance Sheet'],
-  ['bankrecon','🏦 Bank Recon'],['cashflow','💧 Cash Flow'],
-  ['jvlist','✏️ Journal Vouchers'],
+  ['daybook','Day Book'],['cashbook','Cash Book'],
+  ['trialbal','Trial Balance'],['balsheet','Balance Sheet'],
+  ['bankrecon','Bank Recon'],['cashflow','Cash Flow'],
+  ['jvlist','Journal Vouchers'],
 ];
 
 export default function AccountsMode() {
@@ -50,10 +50,10 @@ export default function AccountsMode() {
 
 function DayBook({ journals, cashOnly }) {
   const F = cashOnly ? journals.filter(j=>(j.entries||[]).some(e=>e.ledger==='Cash in Hand'||e.ledger==='Bank Account')) : journals;
-  if(!F.length) return <Empty icon="📓" title="No entries" sub="Add invoices, purchases and expenses to see journal entries" />;
+  if(!F.length) return <Empty title="No entries" sub="Add invoices, purchases and expenses to see journal entries" />;
   return (
     <div>
-      <Alert v="info" style={{marginBottom:12,fontSize:12}}>{cashOnly?'💵 Cash Book — transactions affecting Cash or Bank':'📓 Day Book — all journal entries chronologically'}</Alert>
+      <Alert v="info" style={{marginBottom:12,fontSize:12}}>{cashOnly?'Cash Book — transactions affecting Cash or Bank':'Day Book — all journal entries chronologically'}</Alert>
       <Table headers={['Date','Ref','Narration','Ledger','Dr ₹','Cr ₹']}>
         {F.slice(0,200).flatMap(j=>(j.entries||[]).map((e,ei)=>(
           <TR key={`${j.id}-${ei}`}>
@@ -289,7 +289,7 @@ function LedgerDrill({ name, journals }) {
         <div><div style={{fontWeight:800,fontSize:16}}>{name}</div><div style={{fontSize:12,color:'var(--tx2)'}}>{txns.length} transactions</div></div>
         <Btn v="ghost" sz="sm" onClick={()=>patch({acTab:'trialbal',drillLedger:null})}>← Trial Balance</Btn>
       </div>
-      {txns.length===0 ? <Empty icon="📋" title="No transactions" /> :
+      {txns.length===0 ? <Empty title="No transactions" /> :
         <Table headers={['Date','Ref','Narration','Dr ₹','Cr ₹','Balance']}>
           {txnsWithBal.map((t,i)=>(
             <TR key={i}>
@@ -315,7 +315,7 @@ function JVList() {
         <Alert v="info" style={{fontSize:11,padding:'4px 10px'}}>JV entry form — coming soon</Alert>
       </div>
       {!manual_journals?.length
-        ? <Empty icon="✏️" title="No manual journals" sub="Add depreciation, provisions, bank charges or CA-requested adjustments" />
+        ? <Empty title="No manual journals" sub="Add depreciation, provisions, bank charges or CA-requested adjustments" />
         : <Table headers={['Date','Ref','Narration','Lines','Dr Total','']}>
             {manual_journals.map(j=>(
               <TR key={j.id}>
@@ -324,7 +324,7 @@ function JVList() {
                 <TD>{j.narration}</TD>
                 <TD right>{j.entries?.length||0}</TD>
                 <TD right style={{fontWeight:600}}>{fmt(r2(j.entries?.reduce((a,e)=>a+Number(e.dr||0),0)||0))}</TD>
-                <TD><Btn v="red" sz="sm" onClick={async()=>{if(!confirm('Delete?'))return;patch(s=>({manual_journals:(s.manual_journals||[]).filter(x=>x.id!==j.id)}));await save();}}>🗑</Btn></TD>
+                <TD><Btn v="red" sz="sm" onClick={async()=>{if(!confirm('Delete?'))return;patch(s=>({manual_journals:(s.manual_journals||[]).filter(x=>x.id!==j.id)}));await save();}}>Delete</Btn></TD>
               </TR>
             ))}
           </Table>}
