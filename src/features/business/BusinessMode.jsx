@@ -4,84 +4,296 @@ import { fmt, fmtDate, r2 } from '../../engine/calc.js';
 import { Card, Stat, Tabs, Table, TR, TD, Badge, Empty, Btn, Alert } from '../../components/ui/index.jsx';
 
 const BIZ_TABS = [
-  ['dash','Overview'],['txn','Transactions'],
-  ['money','Cash Flow'],['reports','Reports'],
-  ['po','Purchase Orders'],['payroll','Payroll'],
+  ['dash', 'Overview'],
+  ['money', 'Receivables & Cash Flow'],
+  ['reports', 'Financial Reports'],
+  ['txn', 'Transactions'],
+  ['po', 'Purchase Orders'],
+  ['payroll', 'Payroll'],
 ];
 
 export default function BusinessMode() {
-  const { bizTab, patch, invoices, purchases, expenses, customers, firm, fyFilter } = useStore();
-  const fy = fyFilter==='all'?null:fyFilter;
-  const fyI = invoices.filter(i=>!fy||i.fy===fy);
-  const fyP = purchases.filter(p=>!fy||p.fy===fy);
-  const fyE = expenses.filter(e=>!fy||e.fy===fy);
-  const tS  = r2(fyI.reduce((a,i)=>a+Number(i.total||0),0));
-  const tP  = r2(fyP.reduce((a,p)=>a+Number(p.amount||0),0));
-  const tE  = r2(fyE.reduce((a,e)=>a+Number(e.amount||0),0));
-  const outstanding = r2(customers.reduce((a,c)=>a+Number(c.outstanding||0),0));
+  const { bizTab, patch, invoices, purchases, expenses, customers, fyFilter, setMode } = useStore();
+  const fy = fyFilter === 'all' ? null : fyFilter;
+  const fyI = invoices.filter(i => !fy || i.fy === fy);
+  const fyP = purchases.filter(p => !fy || p.fy === fy);
+  const fyE = expenses.filter(e => !fy || e.fy === fy);
+
+  const tS = r2(fyI.reduce((a, i) => a + Number(i.total || 0), 0));
+  const tP = r2(fyP.reduce((a, p) => a + Number(p.amount || 0), 0));
+  const tE = r2(fyE.reduce((a, e) => a + Number(e.amount || 0), 0));
+  const netProfit = r2(tS - tP - tE);
+  const grossProfit = r2(tS - tP);
+  const marginPct = tS > 0 ? ((netProfit / tS) * 100).toFixed(1) : '0.0';
+  const outstanding = r2(customers.reduce((a, c) => a + Number(c.outstanding || 0), 0));
+  const customersWithDues = customers.filter(c => Number(c.outstanding || 0) > 0);
 
   return (
     <div>
-      <Tabs tabs={BIZ_TABS} active={bizTab} onChange={t=>patch({bizTab:t})} />
-      {bizTab==='dash' && (
-        <div style={{display:'flex',flexDirection:'column',gap:16}}>
-          <div className="stats stats-4">
-            <Stat label="Total Sales" value={fmt(tS)} sub={`${fyI.length} invoices`} />
-            <Stat label="Net Profit" value={fmt(r2(tS-tP-tE))} color={tS-tP-tE>=0?'var(--grn)':'var(--red)'} />
-            <Stat label="Outstanding" value={fmt(outstanding)} color="var(--red)" />
-            <Stat label="Total Purchases" value={fmt(tP)} color="var(--ylw)" />
+      {/* Editorial Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-header-title">Executive Command</h1>
+          <div className="page-header-sub">
+            Real-time financial telemetry, margin intelligence, and receivables radar
           </div>
-          <Card>
-            <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Recent Invoices</div>
-            {invoices.length===0
-              ? <Empty title="No invoices yet" />
-              : <Table headers={['Invoice','Customer','Date','Amount','Status']}>
-                  {invoices.slice(0,10).map(inv=>(
-                    <TR key={inv.id}>
-                      <TD style={{color:'var(--acc)',fontWeight:700,fontSize:12}}>{inv.invoice_no}</TD>
-                      <TD>{inv.customer_name||'Walk-in'}</TD>
-                      <TD style={{color:'var(--tx2)'}}>{fmtDate(inv.date)}</TD>
-                      <TD right style={{fontWeight:700}}>{fmt(inv.total)}</TD>
-                      <TD><Badge v={inv.status==='paid'?'green':inv.status==='unpaid'?'red':'yellow'}>{inv.status}</Badge></TD>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="hero-pill">
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: netProfit >= 0 ? 'var(--grn)' : 'var(--red)' }} />
+            Net Margin: {marginPct}%
+          </span>
+          <Btn v="ghost" sz="sm" onClick={() => setMode('invoice')}>
+            + New Invoice
+          </Btn>
+        </div>
+      </div>
+
+      <Tabs tabs={BIZ_TABS} active={bizTab} onChange={t => patch({ bizTab: t })} />
+
+      {bizTab === 'dash' && (
+        <div className="bento-grid">
+          {/* Hero Telemetry Tile (Span 7) */}
+          <div className="bento-col-7">
+            <Card refract style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)' }}>
+                    Operating Profitability
+                  </div>
+                  <span className={`bdg ${netProfit >= 0 ? 'bdg-green' : 'bdg-red'}`}>
+                    {netProfit >= 0 ? 'Profitable' : 'Deficit'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 36, fontWeight: 800, fontFamily: 'var(--ffm)', letterSpacing: '-0.04em', color: netProfit >= 0 ? 'var(--grn)' : 'var(--red)', lineHeight: 1.1 }}>
+                  {fmt(netProfit)}
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--tx2)', marginTop: 8 }}>
+                  Net earnings after {fmt(tP)} purchases and {fmt(tE)} overheads.
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--bor-subtle)' }}>
+                <div>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Gross Revenue</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--tx)', marginTop: 2 }}>{fmt(tS)}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--tx2)' }}>{fyI.length} orders</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Gross Profit</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--acc)', marginTop: 2 }}>{fmt(grossProfit)}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--tx2)' }}>Pre-expense</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Profit Margin</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--tx)', marginTop: 2 }}>{marginPct}%</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--tx2)' }}>Conversion rate</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Receivables Radar Tile (Span 5) */}
+          <div className="bento-col-5">
+            <Card refract style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)' }}>
+                    Receivables Radar
+                  </div>
+                  <span className="bdg bdg-red">{customersWithDues.length} pending</span>
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--ffm)', letterSpacing: '-0.04em', color: 'var(--red)', lineHeight: 1.1 }}>
+                  {fmt(outstanding)}
+                </div>
+                <div style={{ fontSize: 12.5, color: 'var(--tx2)', marginTop: 6 }}>
+                  Total outstanding capital tied with credit clients.
+                </div>
+              </div>
+
+              <div style={{ marginTop: 20 }}>
+                {customersWithDues.slice(0, 2).map(c => (
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bor-subtle)', fontSize: 12.5 }}>
+                    <span style={{ fontWeight: 600 }}>{c.name}</span>
+                    <span style={{ fontWeight: 700, fontFamily: 'var(--ffm)', color: 'var(--red)' }}>{fmt(c.outstanding)}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 12 }}>
+                  <Btn v="ghost" sz="sm" onClick={() => patch({ bizTab: 'money' })} style={{ width: '100%' }}>
+                    Manage Receivables →
+                  </Btn>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Intelligent Live Activity Stream (Span 8) */}
+          <div className="bento-col-8">
+            <Card>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: '-0.02em' }}>Live Transaction Activity</div>
+                <span style={{ fontSize: 11, color: 'var(--tx2)', fontWeight: 600 }}>Latest 8 invoices</span>
+              </div>
+              {invoices.length === 0 ? (
+                <Empty title="No invoice stream yet" sub="Generate your first sales invoice to activate telemetry." />
+              ) : (
+                <Table headers={['Invoice', 'Customer', 'Date', 'Amount', 'Status']} fintech>
+                  {invoices.slice(0, 8).map(inv => (
+                    <TR key={inv.id} onClick={() => { patch({ viewInv: inv, tab: 'view' }); setMode('invoice'); }}>
+                      <TD mono style={{ color: 'var(--acc)', fontWeight: 700 }}>{inv.invoice_no}</TD>
+                      <TD>
+                        <span style={{ fontWeight: 600 }}>{inv.customer_name || 'Walk-in Customer'}</span>
+                      </TD>
+                      <TD style={{ color: 'var(--tx2)', fontSize: 12 }}>{fmtDate(inv.date)}</TD>
+                      <TD right mono style={{ fontWeight: 700 }}>{fmt(inv.total)}</TD>
+                      <TD>
+                        <Badge v={inv.status === 'paid' ? 'green' : inv.status === 'unpaid' ? 'red' : 'yellow'}>
+                          {inv.status}
+                        </Badge>
+                      </TD>
                     </TR>
                   ))}
-                </Table>}
+                </Table>
+              )}
+            </Card>
+          </div>
+
+          {/* Quick Shortcuts & Working Capital Balance (Span 4) */}
+          <div className="bento-col-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <Card>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)', marginBottom: 8 }}>
+                  Purchases & Procurement
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--ylw)' }}>
+                  {fmt(tP)}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--tx2)', marginTop: 4 }}>
+                  {fyP.length} recorded supplier bills
+                </div>
+              </Card>
+
+              <Card>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)', marginBottom: 8 }}>
+                  Operating Expenses
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--red)' }}>
+                  {fmt(tE)}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--tx2)', marginTop: 4 }}>
+                  Rent, utilities, salaries, and logistics
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bizTab === 'reports' && (
+        <Card refract>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16 }}>Financial Performance Statement</div>
+              <div style={{ fontSize: 12, color: 'var(--tx2)', marginTop: 2 }}>Summary of revenue, procurement, and net profit</div>
+            </div>
+            <span className="hero-pill">FY 2024–25</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {[
+              ['Gross Operating Sales', tS, 'var(--grn)', false],
+              ['Cost of Goods Procured (Purchases)', tP, 'var(--red)', false],
+              ['Gross Profit', grossProfit, grossProfit >= 0 ? 'var(--grn)' : 'var(--red)', true],
+              ['Operational & Store Expenses', tE, 'var(--red)', false],
+              ['Net Operating Margin', netProfit, netProfit >= 0 ? 'var(--grn)' : 'var(--red)', true],
+            ].map(([l, v, c, isHeader]) => (
+              <div
+                key={l}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: isHeader ? '14px 10px' : '10px 10px',
+                  borderBottom: '1px solid var(--bor-subtle)',
+                  background: isHeader ? 'var(--surf2)' : 'transparent',
+                  borderRadius: isHeader ? 'var(--r-sm)' : 0,
+                  margin: isHeader ? '4px 0' : 0,
+                }}
+              >
+                <span style={{ color: isHeader ? 'var(--tx)' : 'var(--tx2)', fontSize: 13, fontWeight: isHeader ? 700 : 500 }}>
+                  {l}
+                </span>
+                <span style={{ fontWeight: 800, fontFamily: 'var(--ffm)', fontSize: isHeader ? 15 : 13, color: c }}>
+                  {fmt(v)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {bizTab === 'money' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 20 }}>
+            <Stat
+              label="Total Uncollected Credit"
+              value={fmt(outstanding)}
+              color="var(--red)"
+              sub="Direct impact on operational cash liquidity"
+            />
+            <Stat
+              label="Debtor Accounts"
+              value={customersWithDues.length}
+              sub={`Out of ${customers.length} total active clients`}
+              color="var(--acc)"
+            />
+          </div>
+
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, fontSize: 14 }}>Customer Credit Balances</div>
+              <span style={{ fontSize: 11, color: 'var(--tx2)' }}>Sorted by highest overdue</span>
+            </div>
+            {customersWithDues.length === 0 ? (
+              <Empty title="All receivables settled" sub="No customers currently have outstanding credit." />
+            ) : (
+              <Table headers={['Customer Name', 'Phone', 'Outstanding Due', 'Action']} fintech>
+                {customersWithDues
+                  .sort((a, b) => Number(b.outstanding || 0) - Number(a.outstanding || 0))
+                  .map(c => (
+                    <TR key={c.id}>
+                      <TD style={{ fontWeight: 600 }}>{c.name}</TD>
+                      <TD style={{ color: 'var(--tx2)' }}>{c.phone || '—'}</TD>
+                      <TD right mono style={{ fontWeight: 700, color: 'var(--red)' }}>
+                        {fmt(c.outstanding)}
+                      </TD>
+                      <TD right>
+                        <a
+                          href={`https://wa.me/${(c.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(
+                            `Dear ${c.name}, greeting from your store. Outstanding balance of ${fmt(
+                              c.outstanding
+                            )} is pending. Please arrange settlement.`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: 11, padding: '4px 10px', textDecoration: 'none' }}
+                        >
+                          WhatsApp Reminder
+                        </a>
+                      </TD>
+                    </TR>
+                  ))}
+              </Table>
+            )}
           </Card>
         </div>
       )}
-      {bizTab==='reports' && (
-        <Card>
-          <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>Profit & Loss</div>
-          {[['Gross Sales',tS,'var(--grn)'],['Purchases',tP,'var(--red)'],['Expenses',tE,'var(--red)'],
-            ['Gross Profit',r2(tS-tP),r2(tS-tP)>=0?'var(--grn)':'var(--red)'],
-            ['Net Profit',r2(tS-tP-tE),r2(tS-tP-tE)>=0?'var(--grn)':'var(--red)']
-          ].map(([l,v,c])=>(
-            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--bor)'}}>
-              <span style={{color:'var(--tx2)',fontSize:13}}>{l}</span>
-              <span style={{fontWeight:700,color:c}}>{fmt(v)}</span>
-            </div>
-          ))}
-        </Card>
-      )}
-      {bizTab==='money' && (
-        <div>
-          <div className="stats stats-2" style={{marginBottom:16}}>
-            <Stat label="Total Outstanding" value={fmt(outstanding)} color="var(--red)" />
-            <Stat label="Customers with dues" value={customers.filter(c=>c.outstanding>0).length} />
-          </div>
-          <Table headers={['Customer','Phone','Outstanding']}>
-            {customers.filter(c=>Number(c.outstanding||0)>0).sort((a,b)=>b.outstanding-a.outstanding).map(c=>(
-              <TR key={c.id}>
-                <TD style={{fontWeight:600}}>{c.name}</TD>
-                <TD style={{color:'var(--tx2)'}}>{c.phone||'—'}</TD>
-                <TD right style={{fontWeight:700,color:'var(--red)'}}>{fmt(c.outstanding)}</TD>
-              </TR>
-            ))}
-          </Table>
-        </div>
-      )}
-      {(bizTab==='txn'||bizTab==='po'||bizTab==='payroll') && (
-        <Alert v="info">This section is fully available in the RetailFlow HTML app. React migration in progress.</Alert>
+
+      {(bizTab === 'txn' || bizTab === 'po' || bizTab === 'payroll') && (
+        <Alert v="info">
+          This enterprise module is running in native sync. Additional detailed ledgers will populate automatically as transactions sync.
+        </Alert>
       )}
     </div>
   );

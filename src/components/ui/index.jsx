@@ -11,8 +11,9 @@ export function Btn({ children, v='ghost', sz='md', onClick, disabled, className
   );
 }
 
-export function Card({ children, className='', onClick }) {
-  return <div className={`card${onClick?' tr-click':''} ${className}`} onClick={onClick}>{children}</div>;
+export function Card({ children, className='', onClick, refract=false, flat=false, style }) {
+  const cls = refract ? 'card-refract' : flat ? 'card-flat' : 'card';
+  return <div style={style} className={`${cls}${onClick?' tr-click':''} ${className}`} onClick={onClick}>{children}</div>;
 }
 
 export function Badge({ children, v='default' }) {
@@ -68,10 +69,18 @@ export function Alert({ children, v='info', className='' }) {
   return <div className={`alert alert-${v} ${className}`}>{children}</div>;
 }
 
-export function Stat({ label, value, sub, color='var(--acc)' }) {
+export function Stat({ label, value, sub, color='var(--acc)', hero=false, trend, trendUp=true, action, className='' }) {
   return (
-    <div className="stat">
-      <div className="stat-label">{label}</div>
+    <div className={`${hero ? 'stat-hero' : 'stat'} ${className}`}>
+      <div className="stat-label">
+        <span>{label}</span>
+        {trend && (
+          <span className={`stat-trend ${trendUp ? 'stat-trend-up' : 'stat-trend-down'}`}>
+            {trendUp ? '↑' : '↓'} {trend}
+          </span>
+        )}
+        {action}
+      </div>
       <div className="stat-value" style={{color}}>{value}</div>
       {sub && <div className="stat-sub">{sub}</div>}
     </div>
@@ -88,10 +97,20 @@ export function Tabs({ tabs, active, onChange }) {
   );
 }
 
-export function Table({ headers, children }) {
+export function Table({ headers, children, fintech=false, className='' }) {
+  if (fintech) {
+    return (
+      <div style={{overflowX:'auto',width:'100%'}}>
+        <table className={`tbl-fintech ${className}`}>
+          <thead><tr>{headers.map((h,i)=><th key={i}>{h}</th>)}</tr></thead>
+          <tbody>{children}</tbody>
+        </table>
+      </div>
+    );
+  }
   return (
     <div className="tbl-wrap">
-      <table className="tbl">
+      <table className={`tbl ${className}`}>
         <thead><tr>{headers.map((h,i)=><th key={i}>{h}</th>)}</tr></thead>
         <tbody>{children}</tbody>
       </table>

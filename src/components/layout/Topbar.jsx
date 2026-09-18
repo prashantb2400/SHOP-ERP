@@ -136,9 +136,9 @@ export default function Topbar() {
             </div>
           )}
 
-          {/* Firm name */}
+          {/* Firm name badge */}
           {firm?.firm_name && (
-            <span style={{fontSize:11,color:'var(--tx2)',maxWidth:120,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'none'}} className="desktop-only">
+            <span className="hero-pill" style={{fontSize:11,padding:'3px 9px',maxWidth:150,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
               {firm.firm_name}
             </span>
           )}

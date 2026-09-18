@@ -10,13 +10,27 @@ const GST_TABS = [
 
 export default function GSTMode() {
   const { gstTab, patch, firm } = useStore();
-  if (!firm?.gst_registered) return <Alert v="info">GST reports require GST registration. Update in Settings.</Alert>;
+  if (!firm?.gst_registered) return <Alert v="info">GST reports require active GST registration. Configure in Settings.</Alert>;
   return (
     <div>
-      <div style={{marginBottom:16}}>
-        <h2 style={{fontSize:20,fontWeight:800}}>GST Reports</h2>
-        <div style={{fontSize:12,color:'var(--tx2)'}}>{firm.gstin||'GSTIN not set'} · {firm.state||'—'}</div>
+      {/* Editorial Header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-header-title">GST Compliance Center</h1>
+          <div className="page-header-sub">
+            GSTR-1 outward supplies, GSTR-3B monthly reconciliation, and Input Tax Credit register
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <span className="hero-pill">
+            GSTIN: <span style={{fontFamily:'var(--ffm)',fontWeight:700}}>{firm.gstin||'Unregistered'}</span>
+          </span>
+          <span className="hero-pill">
+            State: {firm.state||'—'}
+          </span>
+        </div>
       </div>
+
       <Tabs tabs={GST_TABS} active={gstTab} onChange={t=>patch({gstTab:t})} />
       {gstTab==='gstr1'  && <GSTR1View />}
       {gstTab==='3b'     && <GSTR3BView />}
@@ -37,24 +51,26 @@ function GSTR1View() {
   const outGST = r2(invs.reduce((a,i)=>a+Number(i.gst_amount||0),0));
   return (
     <div>
-      <div className="stats stats-3" style={{marginBottom:16}}>
-        <Stat label="B2B Invoices" value={b2b.length} sub={fmt(r2(b2b.reduce((a,i)=>a+Number(i.total||0),0)))} />
-        <Stat label="B2C Invoices" value={b2c.length} sub={fmt(r2(b2c.reduce((a,i)=>a+Number(i.total||0),0)))} />
-        <Stat label="Output GST" value={fmt(outGST)} color="var(--red)" />
+      <div className="stats stats-3" style={{marginBottom:18}}>
+        <Stat label="B2B Supply Invoices" value={b2b.length} sub={fmt(r2(b2b.reduce((a,i)=>a+Number(i.total||0),0)))} />
+        <Stat label="B2C Consumer Bills" value={b2c.length} sub={fmt(r2(b2c.reduce((a,i)=>a+Number(i.total||0),0)))} />
+        <Stat label="Total Output Tax" value={fmt(outGST)} color="var(--red)" />
       </div>
-      <Card>
-        <div style={{fontWeight:700,fontSize:13,marginBottom:12}}>B2B — Invoices with Buyer GSTIN</div>
-        {b2b.length===0 ? <Empty title="No B2B invoices" /> :
-          <Table headers={['Invoice No.','Customer','GSTIN','Date','Taxable','GST','Total']}>
+      <Card flat style={{padding:0,overflow:'hidden'}}>
+        <div style={{padding:'14px 16px',borderBottom:'1px solid var(--bor)',fontWeight:700,fontSize:13}}>
+          B2B Schedule — Invoices with Registered Buyer GSTIN
+        </div>
+        {b2b.length===0 ? <div style={{padding:20}}><Empty title="No B2B invoices recorded" sub="Invoices with customer GSTIN will automatically list here." /></div> :
+          <Table headers={['Invoice No.','Customer Name','Buyer GSTIN','Date','Taxable ₹','GST Amount','Invoice Value']} fintech>
             {b2b.slice(0,100).map(inv=>(
               <TR key={inv.id}>
-                <TD style={{color:'var(--acc)',fontWeight:700,fontSize:11}}>{inv.invoice_no}</TD>
+                <TD mono style={{color:'var(--acc)',fontWeight:700,fontSize:11.5}}>{inv.invoice_no}</TD>
                 <TD style={{fontWeight:600}}>{inv.customer_name}</TD>
-                <TD style={{fontFamily:'var(--ffm)',fontSize:11,color:'var(--tx2)'}}>{inv.customer_gstin}</TD>
-                <TD style={{color:'var(--tx2)'}}>{fmtDate(inv.date)}</TD>
-                <TD right>{fmt(inv.total_taxable||0)}</TD>
-                <TD right style={{color:'var(--red)'}}>{fmt(inv.gst_amount||0)}</TD>
-                <TD right style={{fontWeight:700}}>{fmt(inv.total)}</TD>
+                <TD mono style={{fontSize:11.5,color:'var(--tx2)'}}>{inv.customer_gstin}</TD>
+                <TD style={{color:'var(--tx2)',fontSize:11.5}}>{fmtDate(inv.date)}</TD>
+                <TD right mono>{fmt(inv.total_taxable||0)}</TD>
+                <TD right mono style={{color:'var(--red)'}}>{fmt(inv.gst_amount||0)}</TD>
+                <TD right mono style={{fontWeight:700}}>{fmt(inv.total)}</TD>
               </TR>
             ))}
           </Table>}
@@ -75,15 +91,15 @@ function GSTR3BView() {
   const net   = r2(outGST-itc-cnGST);
   return (
     <div>
-      <div className="stats stats-4" style={{marginBottom:16}}>
-        <Stat label="Output GST" value={fmt(outGST)} color="var(--red)" />
-        <Stat label="ITC (Input)" value={fmt(itc)} color="var(--grn)" />
-        <Stat label="CN Reversal" value={fmt(cnGST)} color="var(--ylw)" />
-        <Stat label="Net Payable" value={fmt(net)} color={net>0?'var(--red)':'var(--grn)'} />
+      <div className="stats stats-4" style={{marginBottom:18}}>
+        <Stat label="Gross Output GST" value={fmt(outGST)} color="var(--red)" />
+        <Stat label="Input Tax Credit" value={fmt(itc)} color="var(--grn)" />
+        <Stat label="Credit Note Reversal" value={fmt(cnGST)} color="var(--ylw)" />
+        <Stat label="Net Tax Position" value={fmt(net)} color={net>0?'var(--red)':'var(--grn)'} />
       </div>
       <Alert v={net>0?'warn':'green'}>
-        {net>0 ? `⚠️ GST payable: ${fmt(net)} — file GSTR-3B by 20th of next month`
-                : `✅ ITC credit: ${fmt(Math.abs(net))} — carry forward to next period`}
+        {net>0 ? `Net GST Payable: ${fmt(net)} — file GSTR-3B and remit tax before 20th of the following month.`
+                : `Accumulated Input Tax Credit: ${fmt(Math.abs(net))} — eligible to carry forward to subsequent periods.`}
       </Alert>
     </div>
   );

@@ -11,24 +11,34 @@ export default function InventoryMode() {
 
   return (
     <div>
-      <div style={{display:'flex',flexWrap:'wrap',justifyContent:'space-between',alignItems:'center',gap:10,marginBottom:16}}>
+      {/* Editorial Header */}
+      <div className="page-header">
         <div>
-          <h2 style={{fontSize:20,fontWeight:800}}>Stock / Item Master</h2>
-          <div style={{fontSize:12,color:'var(--tx2)'}}>
-            {inventory.length} items {gdwFilter&&`· Godown: ${gdwFilter}`}
-            {lowStock.length>0&&<span style={{color:'var(--red)',marginLeft:8}}>· {lowStock.length} low stock</span>}
+          <h1 className="page-header-title">Inventory &amp; Stock Master</h1>
+          <div className="page-header-sub">
+            Multi-godown inventory tracking, batch expiry management, and reorder intelligence
           </div>
         </div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+          <span className="hero-pill">
+            {inventory.length} Stock SKUs
+          </span>
+          {lowStock.length>0 && (
+            <span className="hero-pill" style={{color:'var(--red)',borderColor:'rgba(220, 38, 38, 0.3)',background:'var(--rdb)'}}>
+              {lowStock.length} Low Stock Alert
+            </span>
+          )}
           <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'godowns'})}>Godowns</Btn>
           <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'import',importPreview:null})}>Import CSV</Btn>
-          {gdwFilter&&<Btn v="acc" sz="sm" onClick={()=>patch({gdwFilter:''})}>✕ {gdwFilter}</Btn>}
+          {gdwFilter && <Btn v="acc" sz="sm" onClick={()=>patch({gdwFilter:''})}>Clear Godown Filter</Btn>}
         </div>
       </div>
 
-      {lowStock.length>0&&<Alert v="warn" style={{marginBottom:12}}>
-        Low stock alert: {lowStock.map(i=><b key={i.id} style={{marginRight:6}}>{i.name} ({i.stock})</b>)}
-      </Alert>}
+      {lowStock.length>0 && (
+        <Alert v="warn" style={{marginBottom:16}}>
+          Low Stock Warning: {lowStock.map(i=><b key={i.id} style={{marginRight:8}}>{i.name} ({i.stock} {i.unit})</b>)}
+        </Alert>
+      )}
 
       {invTab==='godowns' ? <GodownView /> :
        invTab==='import'  ? <ImportView /> : (
@@ -36,7 +46,7 @@ export default function InventoryMode() {
           <ItemForm />
           <BatchModal />
           {filtered.length===0
-            ? <Empty title={gdwFilter?`No items in ${gdwFilter}`:'No items yet'} sub="Add items above to use in invoices" />
+            ? <Card><Empty title={gdwFilter?`No items in ${gdwFilter}`:'No inventory registered'} sub="Add items above to enable fast invoice dispatch" /></Card>
             : <ItemTable items={filtered} />}
         </>
       )}
@@ -200,8 +210,10 @@ function BatchModal() {
   return (
     <Modal onClose={()=>patch({batchItemId:null,batchForm:null})} maxWidth="560px">
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:16}}>
-        <div><div style={{fontWeight:800,fontSize:16}}>📦 Batch Manager</div>
-          <div style={{fontSize:12,color:'var(--tx2)'}}>{item.name} · {item.stock} {item.unit}</div></div>
+        <div>
+          <div style={{fontWeight:800,fontSize:16}}>Batch Stock Manager</div>
+          <div style={{fontSize:12,color:'var(--tx2)'}}>{item.name} · {item.stock} {item.unit}</div>
+        </div>
         <Btn v="ghost" sz="sm" onClick={()=>patch({batchItemId:null,batchForm:null})}>✕</Btn>
       </div>
       {item.batches?.length>0&&(
@@ -210,10 +222,10 @@ function BatchModal() {
             <TR key={b.id} style={{background:b.exp_date<=todayStr?'var(--rdb)':''}}>
               <TD style={{fontWeight:600}}>{b.batch_no}</TD>
               <TD style={{color:b.exp_date<=todayStr?'var(--red)':'',fontWeight:b.exp_date<=todayStr?700:400}}>
-                {fmtDate(b.exp_date)}{b.exp_date<=todayStr?' ⚠️ EXPIRED':''}
+                {fmtDate(b.exp_date)}{b.exp_date<=todayStr?' (EXPIRED)':''}
               </TD>
-              <TD right>{b.qty}</TD>
-              <TD right>{b.purchase_rate?fmt(b.purchase_rate):'—'}</TD>
+              <TD right mono>{b.qty}</TD>
+              <TD right mono>{b.purchase_rate?fmt(b.purchase_rate):'—'}</TD>
               <TD><Btn v="red" sz="sm" onClick={async()=>{
                 const bid=b.id;
                 patch(s=>{
@@ -225,7 +237,7 @@ function BatchModal() {
                   return {inventory:inv};
                 });
                 await save();
-              }}>🗑</Btn></TD>
+              }}>Delete</Btn></TD>
             </TR>
           ))}
         </Table>
@@ -261,7 +273,7 @@ function GodownView() {
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-        <div style={{fontWeight:700}}>{godowns.length} locations</div>
+        <div style={{fontWeight:700}}>{godowns.length} Storage Godowns</div>
         <div style={{display:'flex',gap:8}}>
           <Btn v="pri" sz="sm" onClick={async()=>{const n=prompt('New godown name:');if(!n?.trim())return;if(godowns.includes(n.trim())){toast('Already exists','error');return;}patch(s=>({godowns:[...s.godowns,n.trim()]}));await save();toast('Added ✓','success');}}>+ Add Godown</Btn>
           <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'items'})}>← Back</Btn>
@@ -269,13 +281,13 @@ function GodownView() {
       </div>
       <div className="g3">
         {Object.entries(gdwMap).map(([g,data])=>(
-          <Card key={g} onClick={()=>patch({gdwFilter:g,invTab:'items'})} style={{cursor:'pointer'}}>
+          <Card refract key={g} onClick={()=>patch({gdwFilter:g,invTab:'items'})} style={{cursor:'pointer'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'start',marginBottom:8}}>
               <div style={{fontWeight:700}}>{g}</div>
-              {g!=='Main'&&<Btn v="red" sz="sm" onClick={async e=>{e.stopPropagation();if(data.items.length>0){toast('Move items out first','error');return;}patch(s=>({godowns:s.godowns.filter(x=>x!==g)}));await save();}}>🗑</Btn>}
+              {g!=='Main'&&<Btn v="red" sz="sm" onClick={async e=>{e.stopPropagation();if(data.items.length>0){toast('Move items out first','error');return;}patch(s=>({godowns:s.godowns.filter(x=>x!==g)}));await save();}}>Delete</Btn>}
             </div>
-            <div style={{fontSize:26,fontWeight:800,color:'var(--acc)'}}>{data.items.length}</div>
-            <div style={{fontSize:11,color:'var(--tx2)'}}>items · {fmt(data.value)}</div>
+            <div style={{fontSize:28,fontWeight:800,fontFamily:'var(--ffm)',color:'var(--acc)'}}>{data.items.length}</div>
+            <div style={{fontSize:11.5,color:'var(--tx2)',marginTop:4}}>items · {fmt(data.value)} valuation</div>
           </Card>
         ))}
       </div>
@@ -314,38 +326,38 @@ function ImportView() {
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-        <div style={{fontWeight:700}}>Bulk Import Items</div>
+        <div style={{fontWeight:800,fontSize:18}}>Bulk Import Inventory Items</div>
         <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'items',importPreview:null})}>← Back</Btn>
       </div>
       {!importPreview ? (
-        <div style={{maxWidth:480}}>
-          <Alert v="info" style={{marginBottom:16,fontSize:12}}>
+        <div style={{maxWidth:520}}>
+          <Alert v="info" style={{marginBottom:16,fontSize:12.5}}>
             <b>CSV format</b> — Required: <code>name</code>. Optional: <code>rate, stock, unit, gst_rate, hsn, category, barcode</code><br/><br/>
             <b>Example:</b><br/>
             <code style={{fontSize:11}}>name,rate,stock,unit,gst_rate<br/>Tata Salt 1kg,22,50,pcs,5</code>
           </Alert>
           <label style={{cursor:'pointer',display:'inline-flex',alignItems:'center',gap:8,padding:'12px 24px',background:'var(--acc)',color:'#fff',borderRadius:10,fontWeight:700}}>
-            📂 Choose CSV File
+            Choose CSV File
             <input ref={fileRef} type="file" accept=".csv,.txt" onChange={handleFile} style={{display:'none'}} />
           </label>
         </div>
       ) : (
         <div>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-            <div style={{fontWeight:600}}>{importPreview.length} rows ready</div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+            <div style={{fontWeight:600}}>{importPreview.length} rows ready for database sync</div>
             <div style={{display:'flex',gap:8}}>
-              <label style={{cursor:'pointer'}}><Btn v="ghost" sz="sm" as="span">📂 New File</Btn><input type="file" accept=".csv,.txt" onChange={handleFile} style={{display:'none'}}/></label>
-              <Btn v="pri" sz="sm" onClick={confirmImport}>✅ Import All ({importPreview.length})</Btn>
+              <label style={{cursor:'pointer'}}><Btn v="ghost" sz="sm" as="span">New File</Btn><input type="file" accept=".csv,.txt" onChange={handleFile} style={{display:'none'}}/></label>
+              <Btn v="pri" sz="sm" onClick={confirmImport}>Commit Import ({importPreview.length})</Btn>
             </div>
           </div>
-          <Table headers={['Name','Rate','Stock','Unit','GST%','HSN']}>
+          <Table headers={['Name','Rate','Stock','Unit','GST%','HSN']} fintech>
             {importPreview.slice(0,50).map((r,i)=>(
               <TR key={i}>
                 <TD style={{fontWeight:600}}>{r.name}</TD>
-                <TD right>{r.rate?fmt(r.rate):'—'}</TD>
-                <TD right>{r.stock||0}</TD>
+                <TD right mono>{r.rate?fmt(r.rate):'—'}</TD>
+                <TD right mono>{r.stock||0}</TD>
                 <TD style={{color:'var(--tx2)'}}>{r.unit}</TD>
-                <TD>{r.gst_rate}%</TD>
+                <TD mono>{r.gst_rate}%</TD>
                 <TD style={{color:'var(--tx2)',fontFamily:'var(--ffm)',fontSize:11}}>{r.hsn||'—'}</TD>
               </TR>
             ))}

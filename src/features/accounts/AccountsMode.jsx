@@ -25,13 +25,24 @@ export default function AccountsMode() {
 
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+      {/* Editorial Header */}
+      <div className="page-header">
         <div>
-          <h2 style={{fontSize:20,fontWeight:800}}>Accounts & Books</h2>
-          <div style={{fontSize:12,color:'var(--tx2)'}}>{fyJ.length} journal entries</div>
+          <h1 className="page-header-title">General Ledger &amp; Financials</h1>
+          <div className="page-header-sub">
+            Double-entry bookkeeping, trial balance verification, and real-time audit journals
+          </div>
         </div>
-        <Btn v="pri" sz="sm" onClick={()=>patch({acTab:'jvlist'})}>+ Journal Voucher</Btn>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <span className="hero-pill">
+            {fyJ.length} Journal Entries
+          </span>
+          <Btn v="pri" sz="sm" onClick={()=>patch({acTab:'jvlist'})}>
+            + Journal Voucher
+          </Btn>
+        </div>
       </div>
+
       <Tabs tabs={AC_TABS} active={drillLedger?'trialbal':acTab} onChange={t=>patch({acTab:t,drillLedger:null})} />
       {drillLedger
         ? <LedgerDrill name={drillLedger} journals={fyJ} />
@@ -50,22 +61,26 @@ export default function AccountsMode() {
 
 function DayBook({ journals, cashOnly }) {
   const F = cashOnly ? journals.filter(j=>(j.entries||[]).some(e=>e.ledger==='Cash in Hand'||e.ledger==='Bank Account')) : journals;
-  if(!F.length) return <Empty title="No entries" sub="Add invoices, purchases and expenses to see journal entries" />;
+  if(!F.length) return <Card><Empty title="No entries recorded" sub="Add invoices, purchases and expenses to generate double-entry records" /></Card>;
   return (
     <div>
-      <Alert v="info" style={{marginBottom:12,fontSize:12}}>{cashOnly?'Cash Book — transactions affecting Cash or Bank':'Day Book — all journal entries chronologically'}</Alert>
-      <Table headers={['Date','Ref','Narration','Ledger','Dr ₹','Cr ₹']}>
-        {F.slice(0,200).flatMap(j=>(j.entries||[]).map((e,ei)=>(
-          <TR key={`${j.id}-${ei}`}>
-            <TD style={{color:'var(--tx2)',fontSize:11,whiteSpace:'nowrap'}}>{ei===0?fmtDate(j.date):''}</TD>
-            <TD style={{color:'var(--acc)',fontWeight:700,fontSize:11,whiteSpace:'nowrap'}}>{ei===0?j.ref:''}</TD>
-            <TD style={{color:'var(--tx2)',fontSize:11}}>{ei===0?j.narration:''}</TD>
-            <TD style={{paddingLeft:ei>0?28:12}}>{e.ledger}</TD>
-            <TD right style={{color:e.dr>0?'var(--red)':'var(--tx2)',fontWeight:e.dr>0?600:400}}>{e.dr>0?fmt(e.dr):'—'}</TD>
-            <TD right style={{color:e.cr>0?'var(--grn)':'var(--tx2)',fontWeight:e.cr>0?600:400}}>{e.cr>0?fmt(e.cr):'—'}</TD>
-          </TR>
-        )))}
-      </Table>
+      <Alert v="info" style={{marginBottom:14,fontSize:12}}>
+        {cashOnly?'Cash & Bank Ledger — liquid fund movements chronologically':'General Day Book — chronological audit trail of all transactions'}
+      </Alert>
+      <Card flat style={{padding:0,overflow:'hidden'}}>
+        <Table headers={['Date','Ref','Narration','Ledger','Debit ₹','Credit ₹']} fintech>
+          {F.slice(0,200).flatMap(j=>(j.entries||[]).map((e,ei)=>(
+            <TR key={`${j.id}-${ei}`}>
+              <TD style={{color:'var(--tx2)',fontSize:11.5,whiteSpace:'nowrap'}}>{ei===0?fmtDate(j.date):''}</TD>
+              <TD mono style={{color:'var(--acc)',fontWeight:700,fontSize:11.5,whiteSpace:'nowrap'}}>{ei===0?j.ref:''}</TD>
+              <TD style={{color:'var(--tx2)',fontSize:11.5}}>{ei===0?j.narration:''}</TD>
+              <TD style={{paddingLeft:ei>0?28:14,fontWeight:600}}>{e.ledger}</TD>
+              <TD right mono style={{color:e.dr>0?'var(--red)':'var(--tx2)',fontWeight:e.dr>0?700:400}}>{e.dr>0?fmt(e.dr):'—'}</TD>
+              <TD right mono style={{color:e.cr>0?'var(--grn)':'var(--tx2)',fontWeight:e.cr>0?700:400}}>{e.cr>0?fmt(e.cr):'—'}</TD>
+            </TR>
+          )))}
+        </Table>
+      </Card>
     </div>
   );
 }
@@ -80,31 +95,33 @@ function TrialBal({ tb, onDrill }) {
   return (
     <div>
       {balanced
-        ? <Alert v="green" style={{marginBottom:12}}>✓ Trial Balance balances — Dr = Cr = {fmt(totDr)}</Alert>
-        : <Alert v="warn" style={{marginBottom:12}}>⚠️ Does not balance — Dr {fmt(totDr)} ≠ Cr {fmt(totCr)}</Alert>}
-      <Table headers={['Ledger','Group','Dr ₹','Cr ₹','Balance']}>
-        {Object.entries(groups).sort().flatMap(([g,items])=>[
-          <tr key={`g-${g}`} style={{background:'var(--surf2)'}}>
-            <td colSpan={5} style={{padding:'6px 12px',fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:.4,color:'var(--tx2)'}}>{g}</td>
-          </tr>,
-          ...items.map(([k,v])=>(
-            <TR key={k}>
-              <TD><button onClick={()=>onDrill(k)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--acc)',fontWeight:600,fontSize:12}}>{k}</button></TD>
-              <TD style={{fontSize:11,color:'var(--tx2)'}}>{v.group}</TD>
-              <TD right>{v.dr>0?fmt(v.dr):'—'}</TD>
-              <TD right>{v.cr>0?fmt(v.cr):'—'}</TD>
-              <TD right style={{fontWeight:700,color:v.closing>=0?'var(--grn)':'var(--red)'}}>{fmt(Math.abs(v.closing))} {v.closing>=0?'Dr':'Cr'}</TD>
-            </TR>
-          )),
-        ])}
-        <tr style={{background:'var(--surf2)',borderTop:'2px solid var(--bor)'}}>
-          <td colSpan={2} style={{padding:'8px 12px',fontWeight:700}}>TOTAL</td>
-          <td style={{textAlign:'right',padding:'8px 12px',fontWeight:700,color:'var(--red)'}}>{fmt(totDr)}</td>
-          <td style={{textAlign:'right',padding:'8px 12px',fontWeight:700,color:'var(--grn)'}}>{fmt(totCr)}</td>
-          <td style={{textAlign:'right',padding:'8px 12px',fontWeight:700,color:balanced?'var(--grn)':'var(--red)'}}>{balanced?'✓ Balanced':'✗ Diff: '+fmt(Math.abs(totDr-totCr))}</td>
-        </tr>
-      </Table>
-      <div style={{fontSize:11,color:'var(--tx2)',marginTop:8}}>Click any ledger name to drill down into its transactions.</div>
+        ? <Alert v="green" style={{marginBottom:14}}>Trial Balance in equilibrium — Total Debits = Total Credits = {fmt(totDr)}</Alert>
+        : <Alert v="warn" style={{marginBottom:14}}>Variance detected — Debits {fmt(totDr)} ≠ Credits {fmt(totCr)}</Alert>}
+      <Card flat style={{padding:0,overflow:'hidden'}}>
+        <Table headers={['Account Ledger','Group Category','Debit ₹','Credit ₹','Net Position']} fintech>
+          {Object.entries(groups).sort().flatMap(([g,items])=>[
+            <tr key={`g-${g}`} style={{background:'var(--surf2)'}}>
+              <td colSpan={5} style={{padding:'7px 14px',fontSize:10.5,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.06em',color:'var(--tx2)'}}>{g}</td>
+            </tr>,
+            ...items.map(([k,v])=>(
+              <TR key={k}>
+                <TD><button onClick={()=>onDrill(k)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--acc)',fontWeight:700,fontSize:12.5}}>{k}</button></TD>
+                <TD style={{fontSize:11.5,color:'var(--tx2)'}}>{v.group}</TD>
+                <TD right mono>{v.dr>0?fmt(v.dr):'—'}</TD>
+                <TD right mono>{v.cr>0?fmt(v.cr):'—'}</TD>
+                <TD right mono style={{fontWeight:700,color:v.closing>=0?'var(--grn)':'var(--red)'}}>{fmt(Math.abs(v.closing))} {v.closing>=0?'Dr':'Cr'}</TD>
+              </TR>
+            )),
+          ])}
+          <tr style={{background:'var(--surf2)',borderTop:'2px solid var(--bor)'}}>
+            <td colSpan={2} style={{padding:'10px 14px',fontWeight:800}}>TOTAL RECONCILIATION</td>
+            <td style={{textAlign:'right',padding:'10px 14px',fontWeight:800,fontFamily:'var(--ffm)',color:'var(--red)'}}>{fmt(totDr)}</td>
+            <td style={{textAlign:'right',padding:'10px 14px',fontWeight:800,fontFamily:'var(--ffm)',color:'var(--grn)'}}>{fmt(totCr)}</td>
+            <td style={{textAlign:'right',padding:'10px 14px',fontWeight:800,fontFamily:'var(--ffm)',color:balanced?'var(--grn)':'var(--red)'}}>{balanced?'Reconciled':'Diff: '+fmt(Math.abs(totDr-totCr))}</td>
+          </tr>
+        </Table>
+      </Card>
+      <div style={{fontSize:11.5,color:'var(--tx2)',marginTop:10}}>Click any ledger title to inspect granular transaction journal history.</div>
     </div>
   );
 }
