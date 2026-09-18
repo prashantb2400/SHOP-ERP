@@ -1,0 +1,13 @@
+{
+  "name": "RetailFlow",
+  "short_name": "RetailFlow",
+  "description": "GST invoicing for Indian small businesses",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f6fa",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
