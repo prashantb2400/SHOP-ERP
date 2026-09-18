@@ -17,12 +17,10 @@ function AppInner() {
   useEffect(()=>{
     (async()=>{
       await load();
-      const isLocal = typeof location!=='undefined' &&
-        (location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1');
-      if(isLocal) {
-        useStore.setState(s=>({auth:{...s.auth,loading:false,offline:true}}));
-      } else {
-        try { await initCloud(); } catch { goOffline(); }
+      try {
+        await initCloud();
+      } catch {
+        goOffline();
       }
     })();
   },[]);

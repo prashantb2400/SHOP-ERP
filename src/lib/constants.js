@@ -1,10 +1,6 @@
-export const FIREBASE_CFG = {
-  apiKey:            'AIzaSyDmNBxdMkatPJ2edfT_vZLrH-kEV_7goAE',
-  authDomain:        'retailflow-b5602.firebaseapp.com',
-  projectId:         'retailflow-b5602',
-  storageBucket:     'retailflow-b5602.firebasestorage.app',
-  messagingSenderId: '973475727689',
-  appId:             '1:973475727689:web:9f671e8073b944d2e73298',
+export const SUPABASE_CFG = {
+  url: import.meta.env?.VITE_SUPABASE_URL || '',
+  anonKey: import.meta.env?.VITE_SUPABASE_ANON_KEY || '',
 };
 
 export const STATES = [

@@ -109,6 +109,16 @@ function TrialBal({ tb, onDrill }) {
   );
 }
 
+const SideTable = ({ obj, color }) => (
+  <Table headers={['Particulars','₹']}>
+    {Object.entries(obj).sort().flatMap(([grp,items])=>[
+      <tr key={grp} style={{background:'var(--surf2)'}}><td colSpan={2} style={{padding:'6px 12px',fontSize:10,fontWeight:800,textTransform:'uppercase',color}}>{grp}</td></tr>,
+      ...items.map(i=><TR key={i.name}><TD style={{paddingLeft:24}}>{i.name}</TD><TD right style={{fontWeight:600}}>{fmt(i.amount)}</TD></TR>),
+    ])}
+    <tr style={{background:'var(--surf2)'}}><td style={{padding:'8px 12px',fontWeight:700}}>TOTAL</td><td style={{textAlign:'right',padding:'8px 12px',fontWeight:700}}>{fmt(Object.values(obj).flat().reduce((a,i)=>a+i.amount,0))}</td></tr>
+  </Table>
+);
+
 function BalSheet({ tb }) {
   const income  = r2(Object.entries(tb).filter(([,v])=>v.type==='income').reduce((a,[,v])=>a+v.cr-v.dr,0));
   const expense = r2(Object.entries(tb).filter(([,v])=>v.type==='expense').reduce((a,[,v])=>a+v.dr-v.cr,0));
@@ -128,16 +138,6 @@ function BalSheet({ tb }) {
   const totS=r2(Object.values(sources).flat().reduce((a,i)=>a+i.amount,0));
   const totA=r2(Object.values(application).flat().reduce((a,i)=>a+i.amount,0));
   const diff=r2(Math.abs(totS-totA));
-
-  const SideTable=({obj,color})=>(
-    <Table headers={['Particulars','₹']}>
-      {Object.entries(obj).sort().flatMap(([grp,items])=>[
-        <tr key={grp} style={{background:'var(--surf2)'}}><td colSpan={2} style={{padding:'6px 12px',fontSize:10,fontWeight:800,textTransform:'uppercase',color}}>{grp}</td></tr>,
-        ...items.map(i=><TR key={i.name}><TD style={{paddingLeft:24}}>{i.name}</TD><TD right style={{fontWeight:600}}>{fmt(i.amount)}</TD></TR>),
-      ])}
-      <tr style={{background:'var(--surf2)'}}><td style={{padding:'8px 12px',fontWeight:700}}>TOTAL</td><td style={{textAlign:'right',padding:'8px 12px',fontWeight:700}}>{fmt(Object.values(obj).flat().reduce((a,i)=>a+i.amount,0))}</td></tr>
-    </Table>
-  );
 
   return (
     <div>
@@ -213,6 +213,13 @@ function BankRecon({ journals }) {
   );
 }
 
+const CFRow = ({ label, val, sub }) => (
+  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bor)'}}>
+    <span style={{fontSize:13,color:sub?'var(--tx2)':'var(--tx)',paddingLeft:sub?16:0,fontWeight:sub?400:600}}>{label}</span>
+    <span style={{fontWeight:sub?400:700,color:val>0?'var(--grn)':val<0?'var(--red)':'var(--tx)'}}>{val>0?'+':''}{fmt(val)}</span>
+  </div>
+);
+
 function CashFlow({ tb }) {
   const { opening_balances:ob } = useStore();
   const income  = r2(Object.entries(tb).filter(([,v])=>v.type==='income').reduce((a,[,v])=>a+v.cr-v.dr,0));
@@ -228,13 +235,6 @@ function CashFlow({ tb }) {
   const netCF   = r2(opCF+invCF+finCF);
   const openC   = r2((ob?.cash_in_hand||0)+(ob?.bank_balance||0));
 
-  const Row=({label,val,sub})=>(
-    <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--bor)'}}>
-      <span style={{fontSize:13,color:sub?'var(--tx2)':'var(--tx)',paddingLeft:sub?16:0,fontWeight:sub?400:600}}>{label}</span>
-      <span style={{fontWeight:sub?400:700,color:val>0?'var(--grn)':val<0?'var(--red)':'var(--tx)'}}>{val>0?'+':''}{fmt(val)}</span>
-    </div>
-  );
-
   return (
     <div>
       <div className="stats stats-3" style={{marginBottom:16}}>
@@ -245,18 +245,18 @@ function CashFlow({ tb }) {
       <Card>
         <div style={{fontWeight:700,fontSize:14,marginBottom:16}}>Cash Flow Statement (Indirect Method)</div>
         <div style={{fontSize:10,fontWeight:800,color:'var(--grn)',textTransform:'uppercase',letterSpacing:.5,marginBottom:4}}>A. Operating Activities</div>
-        <Row label="Net Profit / (Loss)" val={netP} sub />
-        <Row label="Change in Debtors" val={dCh} sub />
-        <Row label="Change in Creditors" val={crCh} sub />
-        <Row label="Change in Stock" val={stCh} sub />
-        <Row label="GST Payable" val={gstP} sub />
-        <Row label="Net from Operating" val={opCF} />
+        <CFRow label="Net Profit / (Loss)" val={netP} sub />
+        <CFRow label="Change in Debtors" val={dCh} sub />
+        <CFRow label="Change in Creditors" val={crCh} sub />
+        <CFRow label="Change in Stock" val={stCh} sub />
+        <CFRow label="GST Payable" val={gstP} sub />
+        <CFRow label="Net from Operating" val={opCF} />
         <div style={{fontSize:10,fontWeight:800,color:'var(--acc)',textTransform:'uppercase',letterSpacing:.5,margin:'12px 0 4px'}}>B. Investing Activities</div>
-        <Row label="Fixed Asset Changes" val={invCF} sub />
-        <Row label="Net from Investing" val={invCF} />
+        <CFRow label="Fixed Asset Changes" val={invCF} sub />
+        <CFRow label="Net from Investing" val={invCF} />
         <div style={{fontSize:10,fontWeight:800,color:'var(--blu)',textTransform:'uppercase',letterSpacing:.5,margin:'12px 0 4px'}}>C. Financing Activities</div>
-        <Row label="Loans & Capital" val={finCF} sub />
-        <Row label="Net from Financing" val={finCF} />
+        <CFRow label="Loans & Capital" val={finCF} sub />
+        <CFRow label="Net from Financing" val={finCF} />
         <div style={{borderTop:'2px solid var(--bor)',marginTop:12,paddingTop:12}}>
           <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
             <span style={{fontWeight:700}}>Net Change in Cash</span>
@@ -278,7 +278,11 @@ function CashFlow({ tb }) {
 function LedgerDrill({ name, journals }) {
   const { patch } = useStore();
   const txns=journals.flatMap(j=>(j.entries||[]).filter(e=>e.ledger===name).map(e=>({...j,dr:e.dr,cr:e.cr}))).sort((a,b)=>a.date?.localeCompare(b.date||''));
-  let running=0;
+  const txnsWithBal = txns.reduce((acc, t) => {
+    const prev = acc.length > 0 ? acc[acc.length - 1].bal : 0;
+    acc.push({ ...t, bal: r2(prev + t.dr - t.cr) });
+    return acc;
+  }, []);
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
@@ -287,16 +291,16 @@ function LedgerDrill({ name, journals }) {
       </div>
       {txns.length===0 ? <Empty icon="📋" title="No transactions" /> :
         <Table headers={['Date','Ref','Narration','Dr ₹','Cr ₹','Balance']}>
-          {txns.map((t,i)=>{running=r2(running+t.dr-t.cr);return(
+          {txnsWithBal.map((t,i)=>(
             <TR key={i}>
               <TD style={{color:'var(--tx2)',fontSize:11}}>{fmtDate(t.date)}</TD>
               <TD style={{color:'var(--acc)',fontWeight:700,fontSize:11}}>{t.ref}</TD>
               <TD style={{fontSize:11}}>{t.narration}</TD>
               <TD right style={{color:t.dr>0?'var(--red)':'var(--tx2)'}}>{t.dr>0?fmt(t.dr):'—'}</TD>
               <TD right style={{color:t.cr>0?'var(--grn)':'var(--tx2)'}}>{t.cr>0?fmt(t.cr):'—'}</TD>
-              <TD right style={{fontWeight:700,color:running>=0?'var(--grn)':'var(--red)'}}>{fmt(Math.abs(running))} {running>=0?'Dr':'Cr'}</TD>
+              <TD right style={{fontWeight:700,color:t.bal>=0?'var(--grn)':'var(--red)'}}>{fmt(Math.abs(t.bal))} {t.bal>=0?'Dr':'Cr'}</TD>
             </TR>
-          );})}
+          ))}
         </Table>}
     </div>
   );

@@ -10,17 +10,17 @@ const MODES = [
   ['accounts',  '📒 Accounts'],
 ];
 
+const SyncDot = ({ status }) => {
+  const c = { syncing:'var(--ylw)', ok:'var(--grn)', err:'var(--red)' }[status];
+  if (!c) return null;
+  return <span style={{width:8,height:8,borderRadius:'50%',background:c,display:'inline-block',flexShrink:0}} title={status} />;
+};
+
 export default function Topbar() {
   const { mode, setMode, dark, setDark, invQuickMode, toggleQuick, auth, signOut, firm } = useStore();
   const [open, setOpen] = useState(false);
   const user = auth.user;
   const avatar = user?.name?.[0]?.toUpperCase() || '?';
-
-  const SyncDot = () => {
-    const c = { syncing:'var(--ylw)', ok:'var(--grn)', err:'var(--red)' }[auth.syncStatus];
-    if (!c) return null;
-    return <span style={{width:8,height:8,borderRadius:'50%',background:c,display:'inline-block',flexShrink:0}} title={auth.syncStatus} />;
-  };
 
   return (
     <>
@@ -82,7 +82,7 @@ export default function Topbar() {
         </div>
 
         <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-          <SyncDot />
+          <SyncDot status={auth.syncStatus} />
 
           {/* Quick mode toggle (invoice only) */}
           {mode==='invoice' && (

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { uid, today, getFY, r2, buildTotals } from '../engine/calc.js';
 import { saveLocal, loadLocal, LS } from '../lib/storage.js';
-import { fbaseInit, fbaseOnAuth, fbasePush, fbasePull,
-  fbaseSignIn, fbaseSignUp, fbaseGoogleIn, fbaseSignOut } from '../lib/firebase.js';
+import { supabaseInit, supabaseOnAuth, supabasePush, supabasePull,
+  supabaseSignIn, supabaseSignUp, supabaseGoogleIn, supabaseSignOut } from '../lib/supabase.js';
 import { DARK_KEY, QUICK_KEY, SYNC_TS_KEY, DRAFT_KEY } from '../lib/constants.js';
 
 /* ── Factories ──────────────────────────────────────────────── */
@@ -84,7 +84,7 @@ export const useStore = create((set, get) => ({
     const blob = await saveLocal(s, s._profileId);
     if (s.auth.user && navigator.onLine && !s.auth.offline) {
       set(s=>({auth:{...s.auth,syncStatus:'syncing'}}));
-      const ok = await fbasePush(s.auth.user.id, blob, new Date().toISOString());
+      const ok = await supabasePush(s.auth.user.id, blob, new Date().toISOString());
       set(s=>({auth:{...s.auth,syncStatus:ok?'ok':'err'}}));
       if(ok) LS.set(SYNC_TS_KEY, new Date().toISOString());
     }
@@ -111,7 +111,7 @@ export const useStore = create((set, get) => ({
   },
 
   async initCloud() {
-    const ok = fbaseInit();
+    const ok = supabaseInit();
     if (!ok) { set(s=>({auth:{...s.auth,loading:false,offline:true}})); return; }
 
     let resolved = false;
@@ -119,12 +119,12 @@ export const useStore = create((set, get) => ({
       if (!resolved) set(s=>({auth:{...s.auth,loading:false,offline:true}}));
     }, 5000);
 
-    fbaseOnAuth(async user => {
+    supabaseOnAuth(async user => {
       resolved = true;
       clearTimeout(timeout);
       set(s=>({auth:{...s.auth,user,loading:false}}));
       if (user) {
-        const remote = await fbasePull(user.id);
+        const remote = await supabasePull(user.id);
         if (remote?.blob) {
           const localTs  = LS.get(SYNC_TS_KEY);
           if (!localTs || (remote.ts && remote.ts > localTs)) {
@@ -150,10 +150,10 @@ export const useStore = create((set, get) => ({
 
   goOffline: () => set(s=>({auth:{...s.auth,loading:false,offline:true}})),
 
-  signIn:     (e,p) => fbaseSignIn(e,p),
-  signUp:     (e,p) => fbaseSignUp(e,p),
-  googleIn:   ()    => fbaseGoogleIn(),
-  signOut:    ()    => { fbaseSignOut(); set(s=>({auth:{...s.auth,user:null}})); },
+  signIn:     (e,p) => supabaseSignIn(e,p),
+  signUp:     (e,p) => supabaseSignUp(e,p),
+  googleIn:   ()    => supabaseGoogleIn(),
+  signOut:    ()    => { supabaseSignOut(); set(s=>({auth:{...s.auth,user:null}})); },
 
   /* Draft */
   saveDraft() { const f=get().invForm; if(f) try{localStorage.setItem(DRAFT_KEY,JSON.stringify(f));}catch{} },
