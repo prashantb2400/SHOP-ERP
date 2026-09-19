@@ -10,7 +10,8 @@ import {
   LogIn,
   X,
   Sparkles,
-  CircleDot
+  CircleDot,
+  ChevronsUpDown
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -31,7 +32,7 @@ const NAV_ITEMS = [
   }
 ];
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, onOpenFirmSwitcher, onOpenFirmDetails }) {
   const { mode, setMode, firm, auth, signOut } = useStore();
   const user = auth.user;
   const firmInitial = firm?.firm_name?.[0]?.toUpperCase() || 'R';
@@ -129,16 +130,47 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Firm and Profile Footer */}
         <div className="sidebar-footer">
           {firm && (
-            <div className="sidebar-firm-card">
+            <div
+              className="sidebar-firm-card"
+              onClick={() => onOpenFirmSwitcher?.()}
+              title="Click to switch or manage businesses"
+              role="button"
+              tabIndex={0}
+            >
               <div className="sidebar-firm-avatar">
                 {firmInitial}
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {firm.firm_name || 'My Enterprise'}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {firm.firm_name || 'My Enterprise'}
+                  </span>
+                  <ChevronsUpDown size={13} style={{ color: 'var(--tx3)', flexShrink: 0, marginLeft: 4 }} />
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--tx3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  GSTIN: {firm.gstin || 'Unregistered'}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 10.5, color: 'var(--tx3)' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {firm.gstin ? `GST: ${firm.gstin}` : (firm.business_nature ? firm.business_nature.toUpperCase() : 'RETAIL')}
+                  </span>
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenFirmDetails?.();
+                    }}
+                    style={{
+                      color: 'var(--acc)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: '1px 4px',
+                      borderRadius: 4,
+                      background: 'var(--acb)',
+                      fontSize: 9.5,
+                      marginLeft: 4,
+                      flexShrink: 0
+                    }}
+                    title="Edit business profile"
+                  >
+                    Edit
+                  </span>
                 </div>
               </div>
             </div>

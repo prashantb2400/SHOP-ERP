@@ -1010,7 +1010,17 @@ input, select, textarea, button {
   border-radius: var(--r-sm);
   background: var(--surf2);
   border: 1px solid var(--bor);
+  cursor: pointer;
+  transition: all var(--tr-fast);
+  user-select: none;
 }
+
+.sidebar-firm-card:hover {
+  background: var(--surf3);
+  border-color: var(--bor-subtle);
+  transform: translateY(-1px);
+}
+
 
 .sidebar-firm-avatar {
   width: 32px;

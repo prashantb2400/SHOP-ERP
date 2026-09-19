@@ -40,3 +40,24 @@ export async function loadLocal(profileId='default') {
   if (!raw) return null;
   try { return JSON.parse(raw); } catch { return null; }
 }
+
+export const FIRMS_KEY = 'rf_firms';
+export const ACTIVE_FIRM_KEY = 'rf_active_firm_id';
+
+export async function saveFirmsList(firms) {
+  await IDB.set(FIRMS_KEY, JSON.stringify(firms));
+  LS.set(FIRMS_KEY, firms);
+}
+
+export async function loadFirmsList() {
+  const fromIdb = await IDB.get(FIRMS_KEY);
+  if (fromIdb) {
+    try { return JSON.parse(fromIdb); } catch {}
+  }
+  return LS.get(FIRMS_KEY, []);
+}
+
+export async function deleteFirmStorage(firmId) {
+  await IDB.del('rf_data_' + firmId);
+}
+

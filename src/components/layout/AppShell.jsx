@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar.jsx';
 import Topbar from './Topbar.jsx';
+import BusinessDetailsModal from '../firm/BusinessDetailsModal.jsx';
+import BusinessSwitcherModal from '../firm/BusinessSwitcherModal.jsx';
 import { CommandPalette } from '../ui/index.jsx';
 import { useStore } from '../../store/index.js';
 import {
@@ -14,12 +16,16 @@ import {
   Zap,
   PlusCircle,
   LogOut,
-  LogIn
+  LogIn,
+  Building2,
+  Briefcase
 } from 'lucide-react';
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [firmSwitcherOpen, setFirmSwitcherOpen] = useState(false);
+  const [firmDetailsOpen, setFirmDetailsOpen] = useState(false);
   const { setMode, dark, setDark, invQuickMode, toggleQuick, newInv, auth, signOut } = useStore();
 
   useEffect(() => {
@@ -34,6 +40,23 @@ export default function AppShell({ children }) {
   }, []);
 
   const commandActions = [
+    {
+      id: 'biz-switch',
+      title: 'Switch Business Portfolio',
+      desc: 'Switch active firm workspace or add a new business',
+      icon: <Building2 size={16} />,
+      category: 'Business',
+      shortcut: 'B',
+      onSelect: () => setFirmSwitcherOpen(true)
+    },
+    {
+      id: 'biz-edit',
+      title: 'Edit Business Profile & GSTIN',
+      desc: 'Update legal company details, tax rates & bank info',
+      icon: <Briefcase size={16} />,
+      category: 'Business',
+      onSelect: () => setFirmDetailsOpen(true)
+    },
     {
       id: 'nav-pos',
       title: 'POS Billing & Counter Sale',
@@ -122,12 +145,18 @@ export default function AppShell({ children }) {
 
   return (
     <div className="app-shell">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onOpenFirmSwitcher={() => setFirmSwitcherOpen(true)}
+        onOpenFirmDetails={() => setFirmDetailsOpen(true)}
+      />
 
       <div className="app-main">
         <Topbar
           onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
           onOpenCommandPalette={() => setCmdOpen(true)}
+          onOpenFirmSwitcher={() => setFirmSwitcherOpen(true)}
         />
 
         <main className="app-content">
@@ -140,6 +169,18 @@ export default function AppShell({ children }) {
         onClose={() => setCmdOpen(false)}
         actions={commandActions}
       />
+
+      <BusinessSwitcherModal
+        isOpen={firmSwitcherOpen}
+        onClose={() => setFirmSwitcherOpen(false)}
+        onOpenDetails={() => setFirmDetailsOpen(true)}
+      />
+
+      <BusinessDetailsModal
+        isOpen={firmDetailsOpen}
+        onClose={() => setFirmDetailsOpen(false)}
+      />
     </div>
   );
 }
+

@@ -8,7 +8,8 @@ import {
   Zap,
   Building2,
   ChevronRight,
-  PlusCircle
+  PlusCircle,
+  ChevronsUpDown
 } from 'lucide-react';
 
 const MODE_LABELS = {
@@ -21,7 +22,7 @@ const MODE_LABELS = {
   setup: 'Firm Onboarding'
 };
 
-export default function Topbar({ onToggleSidebar, onOpenCommandPalette }) {
+export default function Topbar({ onToggleSidebar, onOpenCommandPalette, onOpenFirmSwitcher }) {
   const { mode, dark, setDark, invQuickMode, toggleQuick, firm, newInv } = useStore();
 
   return (
@@ -38,12 +39,33 @@ export default function Topbar({ onToggleSidebar, onOpenCommandPalette }) {
           <Menu size={18} />
         </button>
 
-        {/* Breadcrumb Navigation */}
+        {/* Breadcrumb Navigation with interactive Business Switcher */}
         <div className="app-breadcrumbs">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <button
+            type="button"
+            onClick={onOpenFirmSwitcher}
+            className="btn btn-ghost"
+            style={{
+              padding: '3px 8px',
+              height: 'auto',
+              borderRadius: 'var(--r-sm)',
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: 'var(--tx)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'var(--surf2)',
+              border: '1px solid var(--bor)'
+            }}
+            title="Click to switch or manage businesses"
+          >
             <Building2 size={13} style={{ color: 'var(--acc)' }} />
-            <span>{firm?.firm_name || 'RetailFlow'}</span>
-          </span>
+            <span style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {firm?.firm_name || 'RetailFlow'}
+            </span>
+            <ChevronsUpDown size={11} style={{ color: 'var(--tx3)' }} />
+          </button>
           <ChevronRight size={12} className="separator" />
           <span className="current">{MODE_LABELS[mode] || 'Workspace'}</span>
         </div>

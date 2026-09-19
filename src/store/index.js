@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { uid, today, getFY, r2, buildTotals } from '../engine/calc.js';
-import { saveLocal, loadLocal, LS } from '../lib/storage.js';
+import { saveLocal, loadLocal, LS, saveFirmsList, loadFirmsList, deleteFirmStorage, ACTIVE_FIRM_KEY } from '../lib/storage.js';
 import { supabaseInit, supabaseOnAuth, supabasePush, supabasePull,
   supabaseSignIn, supabaseSignUp, supabaseGoogleIn, supabaseSignOut } from '../lib/supabase.js';
 import { DARK_KEY, QUICK_KEY, SYNC_TS_KEY, DRAFT_KEY } from '../lib/constants.js';
@@ -49,6 +49,8 @@ export const useStore = create((set, get) => ({
   invQuickMode:LS.get(QUICK_KEY, false),
 
   /* Data */
+  firms:[],
+  activeFirmId: LS.get(ACTIVE_FIRM_KEY, 'default'),
   firm:null, customers:[], invoices:[], purchases:[], sales:[],
   expenses:[], payments:[], inventory:[], inv_counters:{},
   inv_categories:[], credit_notes:[], audit_log:[],
@@ -71,6 +73,7 @@ export const useStore = create((set, get) => ({
   setDark: v => { set({dark:v}); LS.set(DARK_KEY,v); document.documentElement.classList.toggle('dark',v); },
   toggleQuick: () => set(s => { const v=!s.invQuickMode; LS.set(QUICK_KEY,v); return {invQuickMode:v}; }),
   setMode: m => set({mode:m, tab:'list'}),
+  newInv: () => set({ invForm: blankInv(), tab: 'create', viewInv: null }),
 
   auditLog(action, entity, id, meta={}) {
     set(s=>({
@@ -81,7 +84,47 @@ export const useStore = create((set, get) => ({
   /* ── Persistence ─────────────────────────────────────────── */
   async save() {
     const s = get();
-    const blob = await saveLocal(s, s._profileId);
+    const activeId = s.activeFirmId || 'default';
+
+    // Synchronize firms list if firm details have changed
+    let updatedFirms = s.firms || [];
+    if (s.firm) {
+      let found = false;
+      updatedFirms = updatedFirms.map(f => {
+        if (f.id === activeId) {
+          found = true;
+          return {
+            ...f,
+            name: s.firm.firm_name || f.name,
+            gstin: s.firm.gstin || f.gstin || '',
+            phone: s.firm.phone || f.phone || '',
+            email: s.firm.email || f.email || '',
+            state: s.firm.state || f.state || '',
+            business_nature: s.firm.business_nature || f.business_nature || 'retail',
+            details: { ...s.firm }
+          };
+        }
+        return f;
+      });
+      if (!found && s.firm.firm_name) {
+        updatedFirms.push({
+          id: activeId,
+          name: s.firm.firm_name,
+          gstin: s.firm.gstin || '',
+          phone: s.firm.phone || '',
+          email: s.firm.email || '',
+          state: s.firm.state || '',
+          business_nature: s.firm.business_nature || 'retail',
+          is_default: updatedFirms.length === 0,
+          created_at: new Date().toISOString(),
+          details: { ...s.firm }
+        });
+      }
+      set({ firms: updatedFirms });
+      await saveFirmsList(updatedFirms);
+    }
+
+    const blob = await saveLocal(s, activeId);
     if (s.auth.user && navigator.onLine && !s.auth.offline) {
       set(s=>({auth:{...s.auth,syncStatus:'syncing'}}));
       const ok = await supabasePush(s.auth.user.id, blob, new Date().toISOString());
@@ -90,24 +133,198 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  async load(profileId='default') {
-    const data = await loadLocal(profileId);
+  async load(profileId) {
+    let firmsList = await loadFirmsList();
+    const targetId = profileId || LS.get(ACTIVE_FIRM_KEY, 'default');
+    const data = await loadLocal(targetId);
+
+    // Backward compatibility & initialization
+    if (!firmsList || firmsList.length === 0) {
+      if (data?.firm) {
+        const defaultFirm = {
+          id: targetId,
+          name: data.firm.firm_name || 'My Business',
+          gstin: data.firm.gstin || '',
+          phone: data.firm.phone || '',
+          email: data.firm.email || '',
+          state: data.firm.state || '',
+          business_nature: data.firm.business_nature || 'retail',
+          is_default: true,
+          created_at: new Date().toISOString(),
+          details: { ...data.firm }
+        };
+        firmsList = [defaultFirm];
+        await saveFirmsList(firmsList);
+      } else {
+        const blank = blankFirm();
+        const defaultFirm = {
+          id: targetId,
+          name: 'My Business',
+          gstin: '',
+          phone: '',
+          email: '',
+          state: '',
+          business_nature: 'retail',
+          is_default: true,
+          created_at: new Date().toISOString(),
+          details: { ...blank, firm_name: 'My Business' }
+        };
+        firmsList = [defaultFirm];
+        await saveFirmsList(firmsList);
+      }
+    }
+
+    const matchedFirm = firmsList.find(f => f.id === targetId) || firmsList[0];
+    const resolvedId = matchedFirm ? matchedFirm.id : targetId;
+    LS.set(ACTIVE_FIRM_KEY, resolvedId);
+
     if (data) {
       set({
-        firm:data.firm||null, customers:data.customers||[],
-        invoices:data.invoices||[], purchases:data.purchases||[],
-        expenses:data.expenses||[], payments:data.payments||[],
-        inventory:data.inventory||[], inv_counters:data.inv_counters||{},
-        inv_categories:data.inv_categories||[], credit_notes:data.credit_notes||[],
-        audit_log:data.audit_log||[], opening_balances:data.opening_balances||{},
-        purchase_orders:data.purchase_orders||[], staff_roles:data.staff_roles||[],
-        manual_journals:data.manual_journals||[], bank_recon:data.bank_recon||[],
-        accounts_chart:data.accounts_chart||[], godowns:data.godowns||['Main'],
-        payroll:data.payroll||[], attendance:data.attendance||[],
-        bank_accounts:data.bank_accounts||[], _profileId:profileId,
+        firms: firmsList,
+        activeFirmId: resolvedId,
+        firm: data.firm || matchedFirm?.details || null,
+        customers: data.customers || [],
+        invoices: data.invoices || [],
+        purchases: data.purchases || [],
+        expenses: data.expenses || [],
+        payments: data.payments || [],
+        inventory: data.inventory || [],
+        inv_counters: data.inv_counters || {},
+        inv_categories: data.inv_categories || [],
+        credit_notes: data.credit_notes || [],
+        audit_log: data.audit_log || [],
+        opening_balances: data.opening_balances || {},
+        purchase_orders: data.purchase_orders || [],
+        staff_roles: data.staff_roles || [],
+        manual_journals: data.manual_journals || [],
+        bank_recon: data.bank_recon || [],
+        accounts_chart: data.accounts_chart || [],
+        godowns: data.godowns || ['Main'],
+        payroll: data.payroll || [],
+        attendance: data.attendance || [],
+        bank_accounts: data.bank_accounts || [],
+        _profileId: resolvedId,
+      });
+    } else {
+      set({
+        firms: firmsList,
+        activeFirmId: resolvedId,
+        firm: matchedFirm?.details || null,
+        customers: [], invoices: [], purchases: [], expenses: [], payments: [],
+        inventory: [], inv_counters: {}, inv_categories: [], credit_notes: [],
+        audit_log: [], opening_balances: {}, purchase_orders: [], staff_roles: [],
+        manual_journals: [], bank_recon: [], accounts_chart: [],
+        godowns: ['Main'], payroll: [], attendance: [], bank_accounts: [],
+        _profileId: resolvedId,
       });
     }
     return !!data;
+  },
+
+  /* ── Multi-Firm / Business Profile Actions ────────────────── */
+  async updateFirm(newDetails) {
+    const s = get();
+    const updatedFirm = { ...(s.firm || blankFirm()), ...newDetails };
+    const updatedFirms = (s.firms || []).map(f => {
+      if (f.id === s.activeFirmId) {
+        return {
+          ...f,
+          name: updatedFirm.firm_name || f.name,
+          gstin: updatedFirm.gstin || '',
+          phone: updatedFirm.phone || '',
+          email: updatedFirm.email || '',
+          state: updatedFirm.state || '',
+          business_nature: updatedFirm.business_nature || 'retail',
+          details: updatedFirm,
+        };
+      }
+      return f;
+    });
+    set({ firm: updatedFirm, firms: updatedFirms });
+    await saveFirmsList(updatedFirms);
+    await get().save();
+    get().auditLog('update', 'firm', s.activeFirmId, { name: updatedFirm.firm_name });
+    return { ok: true };
+  },
+
+  async switchFirm(firmId) {
+    const s = get();
+    if (firmId === s.activeFirmId) return;
+    await get().save();
+    LS.set(ACTIVE_FIRM_KEY, firmId);
+    await get().load(firmId);
+    set({ invForm: null, viewInv: null });
+    get().auditLog('switch', 'firm', firmId);
+  },
+
+  async createFirm(firmData) {
+    const s = get();
+    const newId = 'firm_' + uid();
+    const newFirmObj = {
+      ...blankFirm(),
+      firm_name: firmData.firm_name || 'New Business',
+      ...firmData,
+    };
+    const newFirmSummary = {
+      id: newId,
+      name: newFirmObj.firm_name,
+      gstin: newFirmObj.gstin || '',
+      phone: newFirmObj.phone || '',
+      email: newFirmObj.email || '',
+      state: newFirmObj.state || '',
+      business_nature: newFirmObj.business_nature || 'retail',
+      is_default: (s.firms || []).length === 0,
+      created_at: new Date().toISOString(),
+      details: newFirmObj,
+    };
+    const updatedFirms = [...(s.firms || []), newFirmSummary];
+    await saveFirmsList(updatedFirms);
+
+    const blankState = {
+      firm: newFirmObj,
+      customers: [], invoices: [], purchases: [], sales: [],
+      expenses: [], payments: [], inventory: [], inv_counters: {},
+      inv_categories: [], credit_notes: [],
+      audit_log: [{
+        ts: new Date().toISOString(),
+        user: s.auth.user?.email || 'local',
+        action: 'create',
+        entity: 'firm',
+        id: newId,
+        name: newFirmObj.firm_name
+      }],
+      opening_balances: {}, purchase_orders: [], staff_roles: [],
+      manual_journals: [], bank_recon: [], accounts_chart: [],
+      godowns: ['Main'], payroll: [], attendance: [], bank_accounts: []
+    };
+    await saveLocal(blankState, newId);
+
+    LS.set(ACTIVE_FIRM_KEY, newId);
+    set({
+      firms: updatedFirms,
+      activeFirmId: newId,
+      _profileId: newId,
+      ...blankState,
+      invForm: null,
+      viewInv: null,
+    });
+    return { ok: true, id: newId };
+  },
+
+  async deleteFirm(firmId) {
+    const s = get();
+    if ((s.firms || []).length <= 1) {
+      return { error: 'Cannot delete the only registered business.' };
+    }
+    if (firmId === s.activeFirmId) {
+      return { error: 'Please switch to another business before deleting this one.' };
+    }
+    const updatedFirms = (s.firms || []).filter(f => f.id !== firmId);
+    await saveFirmsList(updatedFirms);
+    await deleteFirmStorage(firmId);
+    set({ firms: updatedFirms });
+    get().auditLog('delete', 'firm', firmId);
+    return { ok: true };
   },
 
   async initCloud() {
