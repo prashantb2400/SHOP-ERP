@@ -1,63 +1,183 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  TrendingUp,
+  TrendingDown,
+  Search,
+  X,
+  Layers,
+  Sparkles,
+  Loader2
+} from 'lucide-react';
 
-export function Btn({ children, v='ghost', sz='md', onClick, disabled, className='', title, type='button', icon }) {
+/* ── Buttons (Emil Kowalski Tactile Dynamics) ─────────────── */
+export function Btn({
+  children,
+  v = 'ghost',
+  sz = 'md',
+  onClick,
+  disabled = false,
+  loading = false,
+  className = '',
+  title,
+  type = 'button',
+  icon,
+  iconRight,
+  style
+}) {
   return (
-    <button type={type} onClick={onClick} disabled={disabled} title={title}
-      className={`btn btn-${v} btn-${sz} ${className}`}>
-      {icon && <span style={{display:'inline-flex',alignItems:'center'}}>{icon}</span>}
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled || loading}
+      title={title}
+      style={style}
+      className={`btn btn-${v} btn-${sz} ${className}`}
+    >
+      {loading ? (
+        <Loader2 className="animate-spin" size={sz === 'sm' ? 12 : sz === 'lg' ? 18 : 14} style={{ animation: 'spin 1s linear infinite' }} />
+      ) : (
+        icon && <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>{icon}</span>
+      )}
       {children}
+      {iconRight && !loading && (
+        <span style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>{iconRight}</span>
+      )}
     </button>
   );
 }
 
-export function Card({ children, className='', onClick, refract=false, flat=false, style }) {
-  const cls = refract ? 'card-refract' : flat ? 'card-flat' : 'card';
-  return <div style={style} className={`${cls}${onClick?' tr-click':''} ${className}`} onClick={onClick}>{children}</div>;
-}
-
-export function Badge({ children, v='default' }) {
-  return <span className={`bdg bdg-${v}`}>{children}</span>;
-}
-
-export function Field({ label, required, children, hint }) {
+/* ── Bezel Card (Hardware Doppelrand Enclosure) ──────────── */
+export function BezelCard({ children, className = '', innerClassName = '', style, onClick }) {
   return (
-    <div className="field">
-      {label && <label>{label}{required && <span style={{color:'var(--red)',marginLeft:2}}>*</span>}</label>}
-      {children}
-      {hint && <span style={{fontSize:10.5,color:'var(--tx2)'}}>{hint}</span>}
+    <div
+      style={style}
+      className={`bezel-outer ${onClick ? 'tr-click' : ''} ${className}`}
+      onClick={onClick}
+    >
+      <div className={`bezel-inner ${innerClassName}`}>
+        {children}
+      </div>
     </div>
   );
 }
 
-export function Input({ label, required, hint, ...props }) {
-  if (label) return (
-    <Field label={label} required={required} hint={hint}>
-      <input className="input" {...props} />
-    </Field>
+/* ── Standard Card ───────────────────────────────────────── */
+export function Card({ children, className = '', onClick, refract = false, flat = false, style }) {
+  const cls = refract ? 'card-refract' : flat ? 'card-flat' : 'card';
+  return (
+    <div
+      style={style}
+      className={`${cls}${onClick ? ' tr-click' : ''} ${className}`}
+      onClick={onClick}
+    >
+      {children}
+    </div>
   );
-  return <input className="input" {...props} />;
 }
 
-export function Select({ label, required, children, ...props }) {
-  if (label) return (
-    <Field label={label} required={required}>
-      <select className="select" {...props}>{children}</select>
-    </Field>
+/* ── Badges ──────────────────────────────────────────────── */
+export function Badge({ children, v = 'default', dot = false, pulse = false, className = '' }) {
+  const dotColor = {
+    default: 'var(--tx3)',
+    pri: 'var(--acc)',
+    grn: 'var(--grn)',
+    red: 'var(--red)',
+    ylw: 'var(--ylw)',
+    blu: 'var(--blu)',
+    pur: '#8b5cf6',
+    acc: 'var(--acc)'
+  }[v] || 'var(--tx3)';
+
+  return (
+    <span className={`bdg bdg-${v} ${className}`}>
+      {dot && (
+        <span
+          className={`badge-dot ${pulse ? 'pulse' : ''}`}
+          style={{ background: dotColor }}
+        />
+      )}
+      {children}
+    </span>
   );
-  return <select className="select" {...props}>{children}</select>;
 }
 
-export function Modal({ onClose, children, maxWidth='520px' }) {
+/* ── Form Fields & Inputs ────────────────────────────────── */
+export function Field({ label, required, children, hint, error }) {
+  return (
+    <div className="field">
+      {label && (
+        <label>
+          {label}
+          {required && <span style={{ color: 'var(--red)', marginLeft: 3 }}>*</span>}
+        </label>
+      )}
+      {children}
+      {error ? (
+        <span style={{ fontSize: 11, color: 'var(--red)', fontWeight: 600 }}>{error}</span>
+      ) : hint ? (
+        <span style={{ fontSize: 11, color: 'var(--tx2)' }}>{hint}</span>
+      ) : null}
+    </div>
+  );
+}
+
+export function Input({ label, required, hint, error, icon, rightElement, className = '', ...props }) {
+  const inputEl = (
+    <div className="input-wrap">
+      {icon && <span className="input-icon-left">{icon}</span>}
+      <input
+        className={`input ${icon ? 'has-left-icon' : ''} ${rightElement ? 'has-right-icon' : ''} ${className}`}
+        {...props}
+      />
+      {rightElement && <span className="input-icon-right">{rightElement}</span>}
+    </div>
+  );
+
+  if (label) {
+    return (
+      <Field label={label} required={required} hint={hint} error={error}>
+        {inputEl}
+      </Field>
+    );
+  }
+  return inputEl;
+}
+
+export function Select({ label, required, children, className = '', ...props }) {
+  if (label) {
+    return (
+      <Field label={label} required={required}>
+        <select className={`select ${className}`} {...props}>
+          {children}
+        </select>
+      </Field>
+    );
+  }
+  return (
+    <select className={`select ${className}`} {...props}>
+      {children}
+    </select>
+  );
+}
+
+/* ── Modal Dialog ────────────────────────────────────────── */
+export function Modal({ onClose, children, maxWidth = '540px' }) {
   useEffect(() => {
-    const handleKey = e => { if (e.key === 'Escape') onClose?.(); };
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth}} onClick={e=>e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth }} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>,
@@ -65,44 +185,89 @@ export function Modal({ onClose, children, maxWidth='520px' }) {
   );
 }
 
-export function Alert({ children, v='info', className='' }) {
-  return <div className={`alert alert-${v} ${className}`}>{children}</div>;
+/* ── Alert Callout ───────────────────────────────────────── */
+export function Alert({ children, v = 'info', className = '', icon }) {
+  const IconComp = icon || {
+    info: <Info size={16} strokeWidth={2.2} />,
+    warn: <AlertTriangle size={16} strokeWidth={2.2} />,
+    err: <AlertCircle size={16} strokeWidth={2.2} />,
+    ok: <CheckCircle2 size={16} strokeWidth={2.2} />
+  }[v] || <Info size={16} strokeWidth={2.2} />;
+
+  return (
+    <div className={`alert alert-${v} ${className}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ flexShrink: 0, display: 'inline-flex' }}>{IconComp}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>{children}</div>
+    </div>
+  );
 }
 
-export function Stat({ label, value, sub, color='var(--acc)', hero=false, trend, trendUp=true, action, className='' }) {
+/* ── Stat Metric Display ─────────────────────────────────── */
+export function Stat({
+  label,
+  value,
+  sub,
+  color = 'var(--acc)',
+  hero = false,
+  trend,
+  trendUp = true,
+  action,
+  icon,
+  className = ''
+}) {
   return (
     <div className={`${hero ? 'stat-hero' : 'stat'} ${className}`}>
       <div className="stat-label">
-        <span>{label}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          {icon && <span style={{ color: 'var(--tx3)' }}>{icon}</span>}
+          {label}
+        </span>
         {trend && (
           <span className={`stat-trend ${trendUp ? 'stat-trend-up' : 'stat-trend-down'}`}>
-            {trendUp ? '↑' : '↓'} {trend}
+            {trendUp ? <TrendingUp size={11} strokeWidth={2.5} /> : <TrendingDown size={11} strokeWidth={2.5} />}
+            {trend}
           </span>
         )}
         {action}
       </div>
-      <div className="stat-value" style={{color}}>{value}</div>
+      <div className="stat-value num-mono" style={{ color }}>{value}</div>
       {sub && <div className="stat-sub">{sub}</div>}
     </div>
   );
 }
 
+/* ── Segmented Control Tabs ──────────────────────────────── */
 export function Tabs({ tabs, active, onChange }) {
   return (
     <div className="tabs">
-      {tabs.map(([k,v]) => (
-        <button key={k} className={`tab${active===k?' on':''}`} onClick={()=>onChange(k)}>{v}</button>
+      {tabs.map(([k, v, icon]) => (
+        <button
+          key={k}
+          type="button"
+          className={`tab${active === k ? ' on' : ''}`}
+          onClick={() => onChange(k)}
+        >
+          {icon && <span style={{ marginRight: 6, display: 'inline-flex' }}>{icon}</span>}
+          {v}
+        </button>
       ))}
     </div>
   );
 }
 
-export function Table({ headers, children, fintech=false, className='' }) {
+/* ── Divided Data Table (Fintech Standard) ─────────────────── */
+export function Table({ headers, children, fintech = false, className = '' }) {
   if (fintech) {
     return (
-      <div style={{overflowX:'auto',width:'100%'}}>
+      <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
         <table className={`tbl-fintech ${className}`}>
-          <thead><tr>{headers.map((h,i)=><th key={i}>{h}</th>)}</tr></thead>
+          <thead>
+            <tr>
+              {headers.map((h, i) => (
+                <th key={i}>{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>{children}</tbody>
         </table>
       </div>
@@ -111,126 +276,262 @@ export function Table({ headers, children, fintech=false, className='' }) {
   return (
     <div className="tbl-wrap">
       <table className={`tbl ${className}`}>
-        <thead><tr>{headers.map((h,i)=><th key={i}>{h}</th>)}</tr></thead>
+        <thead>
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i}>{h}</th>
+            ))}
+          </tr>
+        </thead>
         <tbody>{children}</tbody>
       </table>
     </div>
   );
 }
 
-export function TR({ children, onClick, className='' }) {
-  return <tr className={`${onClick?'tr-click':''} ${className}`} onClick={onClick}>{children}</tr>;
+export function TR({ children, onClick, className = '' }) {
+  return (
+    <tr className={`${onClick ? 'tr-click' : ''} ${className}`} onClick={onClick}>
+      {children}
+    </tr>
+  );
 }
 
-export function TD({ children, right=false, mono=false, className='', style }) {
-  return <td style={style} className={`${right?'td-r':''} ${mono?'td-mono':''} ${className}`}>{children}</td>;
+export function TD({ children, right = false, mono = false, className = '', style }) {
+  return (
+    <td
+      style={style}
+      className={`${right ? 'td-r ' : ''}${mono ? 'td-mono num-mono ' : ''}${className}`}
+    >
+      {children}
+    </td>
+  );
 }
 
 export function TFoot({ children }) {
   return <tfoot><tr>{children}</tr></tfoot>;
 }
 
+/* ── Empty State ─────────────────────────────────────────── */
 export function Empty({ icon, title, sub, action }) {
   return (
     <div className="empty">
-      <div className="empty-icon" style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
-        {icon || (
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-            <path d="m3.3 7 8.7 5 8.7-5"/>
-            <path d="M12 22V12"/>
-          </svg>
-        )}
+      <div className="empty-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {icon || <Layers size={40} strokeWidth={1.5} />}
       </div>
       <div className="empty-title">{title}</div>
       {sub && <div className="empty-sub">{sub}</div>}
-      {action && <div style={{marginTop:4}}>{action}</div>}
+      {action && <div style={{ marginTop: 6 }}>{action}</div>}
     </div>
   );
 }
 
-export function Loading({ msg='Loading…' }) {
+/* ── Skeletal Loading State ──────────────────────────────── */
+export function Loading({ msg = 'Loading…' }) {
   return (
-    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'55vh',gap:18,width:'100%',maxWidth:440,margin:'0 auto',padding:20}}>
-      <div style={{width:'100%',display:'flex',flexDirection:'column',gap:10}}>
-        <div className="skeleton" style={{height:28,width:'40%'}} />
-        <div className="skeleton" style={{height:80,width:'100%'}} />
-        <div style={{display:'flex',gap:10}}>
-          <div className="skeleton" style={{height:60,flex:1}} />
-          <div className="skeleton" style={{height:60,flex:1}} />
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '50vh',
+        gap: 20,
+        width: '100%',
+        maxWidth: 440,
+        margin: '0 auto',
+        padding: 24
+      }}
+    >
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="skeleton" style={{ height: 32, width: '45%' }} />
+        <div className="skeleton" style={{ height: 90, width: '100%' }} />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div className="skeleton" style={{ height: 64, flex: 1 }} />
+          <div className="skeleton" style={{ height: 64, flex: 1 }} />
         </div>
       </div>
-      <div style={{color:'var(--tx2)',fontSize:12.5,fontWeight:600}}>{msg}</div>
+      <div style={{ color: 'var(--tx2)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Loader2 className="animate-spin" size={14} style={{ animation: 'spin 1s linear infinite' }} />
+        {msg}
+      </div>
     </div>
   );
 }
 
-/* ── Toast (Sonner-Grade Aesthetics) ───────────────────────── */
-let _add = null;
-export function toast(msg, type='info', dur=3000) {
-  _add?.({msg, type, dur, id: Math.random().toString(36).slice(2, 7)});
+/* ── Toast Notification System (Sonner Spec) ─────────────── */
+let _addToast = null;
+export function toast(msg, type = 'info', dur = 3200) {
+  _addToast?.({ msg, type, dur, id: Math.random().toString(36).slice(2, 7) });
 }
 
-const ToastIcon = ({ type }) => {
+function ToastIcon({ type }) {
   if (type === 'success') {
-    return (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--grn)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-    );
+    return <CheckCircle2 size={16} strokeWidth={2.5} style={{ color: 'var(--grn)', flexShrink: 0 }} />;
   }
   if (type === 'error') {
-    return (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--red)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="15" y1="9" x2="9" y2="15" />
-        <line x1="9" y1="9" x2="15" y2="15" />
-      </svg>
-    );
+    return <AlertCircle size={16} strokeWidth={2.5} style={{ color: 'var(--red)', flexShrink: 0 }} />;
   }
   if (type === 'warn') {
-    return (
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ylw)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-    );
+    return <AlertTriangle size={16} strokeWidth={2.5} style={{ color: 'var(--ylw)', flexShrink: 0 }} />;
   }
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
-  );
-};
+  return <Info size={16} strokeWidth={2.5} style={{ color: 'var(--acc)', flexShrink: 0 }} />;
+}
 
 export function ToastProvider() {
   const [list, setList] = useState([]);
   useEffect(() => {
-    _add = t => {
-      setList(p => [...p, t]);
-      setTimeout(() => setList(p => p.filter(x => x.id !== t.id)), t.dur || 3000);
+    _addToast = (t) => {
+      setList((p) => [...p, t]);
+      setTimeout(() => setList((p) => p.filter((x) => x.id !== t.id)), t.dur || 3200);
     };
-    return () => { _add = null; };
+    return () => {
+      _addToast = null;
+    };
   }, []);
 
   return createPortal(
-    <div style={{position:'fixed',bottom:20,right:20,zIndex:9999,display:'flex',flexDirection:'column',gap:8,pointerEvents:'none'}}>
-      {list.map(t => (
-        <div key={t.id} onClick={() => setList(p => p.filter(x => x.id !== t.id))}
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        pointerEvents: 'none'
+      }}
+    >
+      {list.map((t) => (
+        <div
+          key={t.id}
+          onClick={() => setList((p) => p.filter((x) => x.id !== t.id))}
           style={{
-            display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderRadius:10,
-            border:'1px solid var(--bor)',background:'var(--surf)',
-            boxShadow:'var(--shlg)',fontSize:13,fontWeight:600,pointerEvents:'auto',cursor:'pointer',
-            maxWidth:340,animation:'modalSpring 220ms var(--ease-out)'
-          }}>
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '12px 18px',
+            borderRadius: 'var(--r)',
+            border: '1px solid var(--bor)',
+            background: 'var(--surf)',
+            boxShadow: 'var(--shlg)',
+            fontSize: 13,
+            fontWeight: 600,
+            pointerEvents: 'auto',
+            cursor: 'pointer',
+            maxWidth: 380,
+            animation: 'modalSpring 220ms var(--ease-out)'
+          }}
+        >
           <ToastIcon type={t.type} />
-          <span style={{color:'var(--tx)'}}>{t.msg}</span>
+          <span style={{ color: 'var(--tx)', flex: 1, lineHeight: 1.4 }}>{t.msg}</span>
+          <X size={14} style={{ color: 'var(--tx3)' }} />
         </div>
       ))}
     </div>,
     document.body
   );
 }
+
+/* ── Command Palette (Spotlight Search Modal) ─────────────── */
+function CommandPaletteInner({ onClose, actions = [] }) {
+  const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const filteredActions = actions.filter((act) => {
+    const q = query.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      act.title.toLowerCase().includes(q) ||
+      (act.desc && act.desc.toLowerCase().includes(q)) ||
+      (act.category && act.category.toLowerCase().includes(q))
+    );
+  });
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      onClose();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % (filteredActions.length || 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 + filteredActions.length) % (filteredActions.length || 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredActions[selectedIndex]) {
+        filteredActions[selectedIndex].onSelect();
+        onClose();
+      }
+    }
+  };
+
+  return createPortal(
+    <div className="cmd-backdrop" onClick={onClose}>
+      <div className="cmd-modal" onClick={(e) => e.stopPropagation()} onKeyDown={handleKeyDown}>
+        <div className="cmd-search-wrap">
+          <Search size={18} style={{ color: 'var(--tx3)' }} />
+          <input
+            ref={inputRef}
+            className="cmd-search-input"
+            placeholder="Type a command or jump to feature…"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
+          />
+          <span className="kbd-shortcut">ESC</span>
+        </div>
+
+        <div className="cmd-list">
+          {filteredActions.length === 0 ? (
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--tx3)', fontSize: 13 }}>
+              No commands found for &ldquo;{query}&rdquo;
+            </div>
+          ) : (
+            filteredActions.map((act, index) => {
+              const isSelected = index === selectedIndex;
+              return (
+                <button
+                  key={act.id || act.title}
+                  type="button"
+                  className={`cmd-item ${isSelected ? 'selected' : ''}`}
+                  onClick={() => {
+                    act.onSelect();
+                    onClose();
+                  }}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  {act.icon || <Sparkles size={16} />}
+                  <span style={{ fontWeight: 600 }}>{act.title}</span>
+                  {act.desc && <span className="cmd-item-desc">{act.desc}</span>}
+                  {act.shortcut && <span className="kbd-shortcut">{act.shortcut}</span>}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        <div className="cmd-footer">
+          <span>Navigate with <kbd>↑</kbd> <kbd>↓</kbd></span>
+          <span>Select with <kbd>↵</kbd></span>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+export function CommandPalette({ isOpen, onClose, actions = [] }) {
+  if (!isOpen) return null;
+  return <CommandPaletteInner onClose={onClose} actions={actions} />;
+}
+
+

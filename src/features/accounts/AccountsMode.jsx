@@ -2,26 +2,63 @@ import React, { useMemo } from 'react';
 import { useStore } from '../../store/index.js';
 import { fmt, fmtDate, r2 } from '../../engine/calc.js';
 import { buildJournals, buildTrialBalance } from '../../engine/journals.js';
-import { Card, Tabs, Table, TR, TD, Badge, Empty, Btn, Alert, Stat, Field, toast } from '../../components/ui/index.jsx';
+import {
+  Card,
+  Tabs,
+  Table,
+  TR,
+  TD,
+  Empty,
+  Btn,
+  Alert,
+  Stat
+} from '../../components/ui/index.jsx';
+import {
+  BookOpen,
+  Scale,
+  Building2,
+  Receipt,
+  Layers,
+  Activity,
+  Wallet,
+  Plus
+} from 'lucide-react';
 
 const AC_TABS = [
-  ['daybook','Day Book'],['cashbook','Cash Book'],
-  ['trialbal','Trial Balance'],['balsheet','Balance Sheet'],
-  ['bankrecon','Bank Recon'],['cashflow','Cash Flow'],
-  ['jvlist','Journal Vouchers'],
+  ['daybook', 'Day Book', <BookOpen key="d" size={14} />],
+  ['cashbook', 'Cash Book', <Wallet key="c" size={14} />],
+  ['trialbal', 'Trial Balance', <Scale key="t" size={14} />],
+  ['balsheet', 'Balance Sheet', <Layers key="b" size={14} />],
+  ['bankrecon', 'Bank Recon', <Building2 key="r" size={14} />],
+  ['cashflow', 'Cash Flow', <Activity key="f" size={14} />],
+  ['jvlist', 'Journal Vouchers', <Receipt key="j" size={14} />],
 ];
 
 export default function AccountsMode() {
-  const state = useStore();
-  const { acTab, drillLedger, fyFilter, patch } = state;
+  const {
+    acTab,
+    drillLedger,
+    fyFilter,
+    patch,
+    inventory,
+    invoices,
+    purchases,
+    expenses,
+    payments,
+    credit_notes,
+    opening_balances,
+    manual_journals,
+    customers
+  } = useStore();
 
-  const journals = useMemo(()=>buildJournals(state),
-    [state.invoices,state.purchases,state.expenses,state.payments,
-     state.credit_notes,state.opening_balances,state.manual_journals,state.customers]);
+  const journals = useMemo(
+    () => buildJournals({ invoices, purchases, expenses, payments, credit_notes, opening_balances, manual_journals, customers }),
+    [invoices, purchases, expenses, payments, credit_notes, opening_balances, manual_journals, customers]
+  );
 
-  const fy = fyFilter==='all'?null:fyFilter;
-  const fyJ = fy ? journals.filter(j=>!j.date||j.id==='OB'||j.date.startsWith(fy.split('-')[0])) : journals;
-  const tb  = useMemo(()=>buildTrialBalance(fyJ,state.inventory,{}), [fyJ,state.inventory]);
+  const fy = fyFilter === 'all' ? null : fyFilter;
+  const fyJ = fy ? journals.filter(j => !j.date || j.id === 'OB' || j.date.startsWith(fy.split('-')[0])) : journals;
+  const tb = useMemo(() => buildTrialBalance(fyJ, inventory, {}), [fyJ, inventory]);
 
   return (
     <div>
@@ -33,50 +70,53 @@ export default function AccountsMode() {
             Double-entry bookkeeping, trial balance verification, and real-time audit journals
           </div>
         </div>
-        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span className="hero-pill">
             {fyJ.length} Journal Entries
           </span>
-          <Btn v="pri" sz="sm" onClick={()=>patch({acTab:'jvlist'})}>
-            + Journal Voucher
+          <Btn v="pri" sz="sm" icon={<Plus size={14} />} onClick={() => patch({ acTab: 'jvlist' })}>
+            Journal Voucher
           </Btn>
         </div>
       </div>
 
-      <Tabs tabs={AC_TABS} active={drillLedger?'trialbal':acTab} onChange={t=>patch({acTab:t,drillLedger:null})} />
+      <div style={{ marginBottom: 18 }}>
+        <Tabs tabs={AC_TABS} active={drillLedger ? 'trialbal' : acTab} onChange={t => patch({ acTab: t, drillLedger: null })} />
+      </div>
+
       {drillLedger
         ? <LedgerDrill name={drillLedger} journals={fyJ} />
         : <>
-            {acTab==='daybook'   && <DayBook journals={fyJ} />}
-            {acTab==='cashbook'  && <DayBook journals={fyJ} cashOnly />}
-            {acTab==='trialbal'  && <TrialBal tb={tb} onDrill={l=>patch({drillLedger:l})} />}
-            {acTab==='balsheet'  && <BalSheet tb={tb} />}
-            {acTab==='bankrecon' && <BankRecon journals={fyJ} />}
-            {acTab==='cashflow'  && <CashFlow tb={tb} />}
-            {acTab==='jvlist'    && <JVList />}
+            {acTab === 'daybook'   && <DayBook journals={fyJ} />}
+            {acTab === 'cashbook'  && <DayBook journals={fyJ} cashOnly />}
+            {acTab === 'trialbal'  && <TrialBal tb={tb} onDrill={l => patch({ drillLedger: l })} />}
+            {acTab === 'balsheet'  && <BalSheet tb={tb} />}
+            {acTab === 'bankrecon' && <BankRecon journals={fyJ} />}
+            {acTab === 'cashflow'  && <CashFlow tb={tb} />}
+            {acTab === 'jvlist'    && <JVList />}
           </>}
     </div>
   );
 }
 
 function DayBook({ journals, cashOnly }) {
-  const F = cashOnly ? journals.filter(j=>(j.entries||[]).some(e=>e.ledger==='Cash in Hand'||e.ledger==='Bank Account')) : journals;
-  if(!F.length) return <Card><Empty title="No entries recorded" sub="Add invoices, purchases and expenses to generate double-entry records" /></Card>;
+  const F = cashOnly ? journals.filter(j => (j.entries || []).some(e => e.ledger === 'Cash in Hand' || e.ledger === 'Bank Account')) : journals;
+  if (!F.length) return <Card><Empty title="No entries recorded" sub="Add invoices, purchases and expenses to generate double-entry records" /></Card>;
   return (
     <div>
-      <Alert v="info" style={{marginBottom:14,fontSize:12}}>
-        {cashOnly?'Cash & Bank Ledger — liquid fund movements chronologically':'General Day Book — chronological audit trail of all transactions'}
+      <Alert v="info" style={{ marginBottom: 14, fontSize: 12.5 }}>
+        {cashOnly ? 'Cash & Bank Ledger — liquid fund movements chronologically' : 'General Day Book — chronological audit trail of all transactions'}
       </Alert>
-      <Card flat style={{padding:0,overflow:'hidden'}}>
-        <Table headers={['Date','Ref','Narration','Ledger','Debit ₹','Credit ₹']} fintech>
-          {F.slice(0,200).flatMap(j=>(j.entries||[]).map((e,ei)=>(
+      <Card flat style={{ padding: 0, overflow: 'hidden' }}>
+        <Table headers={['Date', 'Ref', 'Narration', 'Ledger', 'Debit ₹', 'Credit ₹']} fintech>
+          {F.slice(0, 200).flatMap(j => (j.entries || []).map((e, ei) => (
             <TR key={`${j.id}-${ei}`}>
-              <TD style={{color:'var(--tx2)',fontSize:11.5,whiteSpace:'nowrap'}}>{ei===0?fmtDate(j.date):''}</TD>
-              <TD mono style={{color:'var(--acc)',fontWeight:700,fontSize:11.5,whiteSpace:'nowrap'}}>{ei===0?j.ref:''}</TD>
-              <TD style={{color:'var(--tx2)',fontSize:11.5}}>{ei===0?j.narration:''}</TD>
-              <TD style={{paddingLeft:ei>0?28:14,fontWeight:600}}>{e.ledger}</TD>
-              <TD right mono style={{color:e.dr>0?'var(--red)':'var(--tx2)',fontWeight:e.dr>0?700:400}}>{e.dr>0?fmt(e.dr):'—'}</TD>
-              <TD right mono style={{color:e.cr>0?'var(--grn)':'var(--tx2)',fontWeight:e.cr>0?700:400}}>{e.cr>0?fmt(e.cr):'—'}</TD>
+              <TD style={{ color: 'var(--tx2)', fontSize: 11.5, whiteSpace: 'nowrap' }}>{ei === 0 ? fmtDate(j.date) : ''}</TD>
+              <TD mono style={{ color: 'var(--acc)', fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap' }}>{ei === 0 ? j.ref : ''}</TD>
+              <TD style={{ color: 'var(--tx2)', fontSize: 11.5 }}>{ei === 0 ? j.narration : ''}</TD>
+              <TD style={{ paddingLeft: ei > 0 ? 28 : 14, fontWeight: 600 }}>{e.ledger}</TD>
+              <TD right mono style={{ color: e.dr > 0 ? 'var(--red)' : 'var(--tx2)', fontWeight: e.dr > 0 ? 700 : 400 }}>{e.dr > 0 ? fmt(e.dr) : '—'}</TD>
+              <TD right mono style={{ color: e.cr > 0 ? 'var(--grn)' : 'var(--tx2)', fontWeight: e.cr > 0 ? 700 : 400 }}>{e.cr > 0 ? fmt(e.cr) : '—'}</TD>
             </TR>
           )))}
         </Table>
@@ -86,38 +126,38 @@ function DayBook({ journals, cashOnly }) {
 }
 
 function TrialBal({ tb, onDrill }) {
-  const totDr = r2(Object.values(tb).reduce((a,v)=>a+v.dr,0));
-  const totCr = r2(Object.values(tb).reduce((a,v)=>a+v.cr,0));
-  const balanced = Math.abs(totDr-totCr)<1;
-  const groups={};
-  Object.entries(tb).forEach(([k,v])=>{const g=v.group||'Misc';if(!groups[g])groups[g]=[];groups[g].push([k,v]);});
+  const totDr = r2(Object.values(tb).reduce((a, v) => a + v.dr, 0));
+  const totCr = r2(Object.values(tb).reduce((a, v) => a + v.cr, 0));
+  const balanced = Math.abs(totDr - totCr) < 1;
+  const groups = {};
+  Object.entries(tb).forEach(([k, v]) => { const g = v.group || 'Misc'; if (!groups[g]) groups[g] = []; groups[g].push([k, v]); });
 
   return (
     <div>
       {balanced
-        ? <Alert v="green" style={{marginBottom:14}}>Trial Balance in equilibrium — Total Debits = Total Credits = {fmt(totDr)}</Alert>
-        : <Alert v="warn" style={{marginBottom:14}}>Variance detected — Debits {fmt(totDr)} ≠ Credits {fmt(totCr)}</Alert>}
-      <Card flat style={{padding:0,overflow:'hidden'}}>
-        <Table headers={['Account Ledger','Group Category','Debit ₹','Credit ₹','Net Position']} fintech>
-          {Object.entries(groups).sort().flatMap(([g,items])=>[
-            <tr key={`g-${g}`} style={{background:'var(--surf2)'}}>
-              <td colSpan={5} style={{padding:'7px 14px',fontSize:10.5,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.06em',color:'var(--tx2)'}}>{g}</td>
+        ? <Alert v="ok" style={{ marginBottom: 14 }}>Trial Balance in equilibrium — Total Debits = Total Credits = {fmt(totDr)}</Alert>
+        : <Alert v="warn" style={{ marginBottom: 14 }}>Variance detected — Debits {fmt(totDr)} ≠ Credits {fmt(totCr)}</Alert>}
+      <Card flat style={{ padding: 0, overflow: 'hidden' }}>
+        <Table headers={['Account Ledger', 'Group Category', 'Debit ₹', 'Credit ₹', 'Net Position']} fintech>
+          {Object.entries(groups).sort().flatMap(([g, items]) => [
+            <tr key={`g-${g}`} style={{ background: 'var(--surf2)' }}>
+              <td colSpan={5} style={{ padding: '7px 14px', fontSize: 10.5, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)' }}>{g}</td>
             </tr>,
-            ...items.map(([k,v])=>(
+            ...items.map(([k, v]) => (
               <TR key={k}>
-                <TD><button onClick={()=>onDrill(k)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--acc)',fontWeight:700,fontSize:12.5}}>{k}</button></TD>
-                <TD style={{fontSize:11.5,color:'var(--tx2)'}}>{v.group}</TD>
-                <TD right mono>{v.dr>0?fmt(v.dr):'—'}</TD>
-                <TD right mono>{v.cr>0?fmt(v.cr):'—'}</TD>
-                <TD right mono style={{fontWeight:700,color:v.closing>=0?'var(--grn)':'var(--red)'}}>{fmt(Math.abs(v.closing))} {v.closing>=0?'Dr':'Cr'}</TD>
+                <TD><button onClick={() => onDrill(k)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--acc)', fontWeight: 700, fontSize: 12.5 }}>{k}</button></TD>
+                <TD style={{ fontSize: 11.5, color: 'var(--tx2)' }}>{v.group}</TD>
+                <TD right mono>{v.dr > 0 ? fmt(v.dr) : '—'}</TD>
+                <TD right mono>{v.cr > 0 ? fmt(v.cr) : '—'}</TD>
+                <TD right mono style={{ fontWeight: 700, color: v.closing >= 0 ? 'var(--grn)' : 'var(--red)' }}>{fmt(Math.abs(v.closing))} {v.closing >= 0 ? 'Dr' : 'Cr'}</TD>
               </TR>
             )),
           ])}
-          <tr style={{background:'var(--surf2)',borderTop:'2px solid var(--bor)'}}>
-            <td colSpan={2} style={{padding:'10px 14px',fontWeight:800}}>TOTAL RECONCILIATION</td>
-            <td style={{textAlign:'right',padding:'10px 14px',fontWeight:800,fontFamily:'var(--ffm)',color:'var(--red)'}}>{fmt(totDr)}</td>
-            <td style={{textAlign:'right',padding:'10px 14px',fontWeight:800,fontFamily:'var(--ffm)',color:'var(--grn)'}}>{fmt(totCr)}</td>
-            <td style={{textAlign:'right',padding:'10px 14px',fontWeight:800,fontFamily:'var(--ffm)',color:balanced?'var(--grn)':'var(--red)'}}>{balanced?'Reconciled':'Diff: '+fmt(Math.abs(totDr-totCr))}</td>
+          <tr style={{ background: 'var(--surf2)', borderTop: '2px solid var(--bor)' }}>
+            <td colSpan={2} style={{ padding: '10px 14px', fontWeight: 800 }}>TOTAL RECONCILIATION</td>
+            <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--red)' }}>{fmt(totDr)}</td>
+            <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--grn)' }}>{fmt(totCr)}</td>
+            <td style={{ textAlign: 'right', padding: '10px 14px', fontWeight: 800, fontFamily: 'var(--ffm)', color: balanced ? 'var(--grn)' : 'var(--red)' }}>{balanced ? 'Reconciled' : 'Diff: ' + fmt(Math.abs(totDr - totCr))}</td>
           </tr>
         </Table>
       </Card>

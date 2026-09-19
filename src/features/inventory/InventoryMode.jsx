@@ -1,13 +1,37 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { useStore } from '../../store/index.js';
 import { fmt, fmtDate, uid, today, r2 } from '../../engine/calc.js';
-import { Card, Btn, Badge, Table, TR, TD, Empty, Alert, Input, Select, Field, Modal, toast } from '../../components/ui/index.jsx';
+import {
+  Card,
+  BezelCard,
+  Btn,
+  Badge,
+  Table,
+  TR,
+  TD,
+  Empty,
+  Alert,
+  Field,
+  Modal,
+  toast
+} from '../../components/ui/index.jsx';
+import {
+  Boxes,
+  Warehouse,
+  UploadCloud,
+  Plus,
+  Edit3,
+  Trash2,
+  AlertTriangle,
+  QrCode,
+  Layers
+} from 'lucide-react';
 import { UNITS } from '../../lib/constants.js';
 
 export default function InventoryMode() {
-  const { inventory, godowns, gdwFilter, invTab, patch, firm } = useStore();
+  const { inventory, gdwFilter, invTab, patch } = useStore();
   const lowStock = inventory.filter(i => Number(i.stock) <= Number(i.low_stock_alert ?? 5));
-  const filtered = gdwFilter ? inventory.filter(i => (i.godown||'Main') === gdwFilter) : inventory;
+  const filtered = gdwFilter ? inventory.filter(i => (i.godown || 'Main') === gdwFilter) : inventory;
 
   return (
     <div>
@@ -19,34 +43,36 @@ export default function InventoryMode() {
             Multi-godown inventory tracking, batch expiry management, and reorder intelligence
           </div>
         </div>
-        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <span className="hero-pill">
+            <Boxes size={13} style={{ color: 'var(--acc)' }} />
             {inventory.length} Stock SKUs
           </span>
-          {lowStock.length>0 && (
-            <span className="hero-pill" style={{color:'var(--red)',borderColor:'rgba(220, 38, 38, 0.3)',background:'var(--rdb)'}}>
+          {lowStock.length > 0 && (
+            <span className="hero-pill" style={{ color: 'var(--red)', borderColor: 'rgba(220, 38, 38, 0.3)', background: 'var(--rdb)' }}>
+              <AlertTriangle size={13} />
               {lowStock.length} Low Stock Alert
             </span>
           )}
-          <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'godowns'})}>Godowns</Btn>
-          <Btn v="ghost" sz="sm" onClick={()=>patch({invTab:'import',importPreview:null})}>Import CSV</Btn>
-          {gdwFilter && <Btn v="acc" sz="sm" onClick={()=>patch({gdwFilter:''})}>Clear Godown Filter</Btn>}
+          <Btn v="ghost" sz="sm" icon={<Warehouse size={13} />} onClick={() => patch({ invTab: 'godowns' })}>Godowns</Btn>
+          <Btn v="ghost" sz="sm" icon={<UploadCloud size={13} />} onClick={() => patch({ invTab: 'import', importPreview: null })}>Import CSV</Btn>
+          {gdwFilter && <Btn v="acc" sz="sm" onClick={() => patch({ gdwFilter: '' })}>Clear Godown Filter</Btn>}
         </div>
       </div>
 
-      {lowStock.length>0 && (
-        <Alert v="warn" style={{marginBottom:16}}>
-          Low Stock Warning: {lowStock.map(i=><b key={i.id} style={{marginRight:8}}>{i.name} ({i.stock} {i.unit})</b>)}
+      {lowStock.length > 0 && (
+        <Alert v="warn" style={{ marginBottom: 16 }}>
+          Low Stock Warning: {lowStock.map(i => <b key={i.id} style={{ marginRight: 8 }}>{i.name} ({i.stock} {i.unit})</b>)}
         </Alert>
       )}
 
-      {invTab==='godowns' ? <GodownView /> :
-       invTab==='import'  ? <ImportView /> : (
+      {invTab === 'godowns' ? <GodownView /> :
+       invTab === 'import'  ? <ImportView /> : (
         <>
           <ItemForm />
           <BatchModal />
-          {filtered.length===0
-            ? <Card><Empty title={gdwFilter?`No items in ${gdwFilter}`:'No inventory registered'} sub="Add items above to enable fast invoice dispatch" /></Card>
+          {filtered.length === 0
+            ? <Card><Empty title={gdwFilter ? `No items in ${gdwFilter}` : 'No inventory registered'} sub="Add items above to enable fast invoice dispatch" /></Card>
             : <ItemTable items={filtered} />}
         </>
       )}
@@ -55,136 +81,174 @@ export default function InventoryMode() {
 }
 
 function ItemForm() {
-  const { invItemForm, inv_categories, firm, godowns, save, patch, auditLog, inventory } = useStore();
+  const { invItemForm, inv_categories, firm, save, patch, auditLog } = useStore();
   const isReg = firm?.gst_registered;
-  const f = invItemForm || {id:'',name:'',unit:'pcs',rate:0,mrp:0,price_mode:'excl',item_type:'product',category:'',gst_rate:18,hsn:'',stock:0,discount:0,barcode:'',low_stock_alert:5,godown:'Main',batches:[]};
-  const upd = p => patch({invItemForm:{...f,...p}});
+  const f = invItemForm || { id: '', name: '', unit: 'pcs', rate: 0, mrp: 0, price_mode: 'excl', item_type: 'product', category: '', gst_rate: 18, hsn: '', stock: 0, discount: 0, barcode: '', low_stock_alert: 5, godown: 'Main', batches: [] };
+  const upd = p => patch({ invItemForm: { ...f, ...p } });
 
   const saveItem = async () => {
-    if (!f.name?.trim()) { toast('Item name required','error'); return; }
-    const item = {...f, name:f.name.trim(), id:f.id||uid()};
+    if (!f.name?.trim()) { toast('Item name required', 'error'); return; }
+    const item = { ...f, name: f.name.trim(), id: f.id || uid() };
     patch(s => {
-      const idx = s.inventory.findIndex(i=>i.id===item.id||(i.name.toLowerCase()===item.name.toLowerCase()));
-      const inventory = idx>=0 ? s.inventory.map((x,i)=>i===idx?{...x,...item}:x) : [item,...s.inventory];
-      return {inventory, invItemForm:null};
+      const idx = s.inventory.findIndex(i => i.id === item.id || (i.name.toLowerCase() === item.name.toLowerCase()));
+      const inventory = idx >= 0 ? s.inventory.map((x, i) => i === idx ? { ...x, ...item } : x) : [item, ...s.inventory];
+      return { inventory, invItemForm: null };
     });
-    auditLog('create','inventory',item.id,{name:item.name});
+    auditLog('create', 'inventory', item.id, { name: item.name });
     await save();
-    toast('Item saved: '+item.name,'success');
+    toast('Item saved: ' + item.name, 'success');
   };
 
   return (
-    <Card style={{marginBottom:16}}>
-      <div style={{fontSize:11,fontWeight:700,color:'var(--tx2)',textTransform:'uppercase',letterSpacing:.5,marginBottom:12}}>+ Add / Update Item</div>
-      <div style={{display:'flex',gap:8,marginBottom:12}}>
-        {['product','service'].map(t=>(
-          <button key={t} onClick={()=>upd({item_type:t})}
-            style={{flex:1,padding:'8px',fontSize:12,fontWeight:600,borderRadius:8,cursor:'pointer',
-              background:f.item_type===t?'var(--acb)':'transparent',
-              border:`1.5px solid ${f.item_type===t?'var(--acc)':'var(--bor)'}`,
-              color:f.item_type===t?'var(--acc)':'var(--tx2)'}}>
-            {t==='product'?'Product':'Service'}
+    <BezelCard style={{ marginBottom: 18 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+        Item SKU Registry &amp; Pricing
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        {['product', 'service'].map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => upd({ item_type: t })}
+            style={{
+              flex: 1,
+              padding: '8px',
+              fontSize: 12,
+              fontWeight: 600,
+              borderRadius: 'var(--r-sm)',
+              cursor: 'pointer',
+              background: f.item_type === t ? 'var(--acb)' : 'var(--surf2)',
+              border: `1.5px solid ${f.item_type === t ? 'var(--acc)' : 'var(--bor)'}`,
+              color: f.item_type === t ? 'var(--acc)' : 'var(--tx2)',
+              transition: 'transform 120ms var(--ease-out), background-color 160ms ease'
+            }}
+          >
+            {t === 'product' ? 'Tangible Product' : 'Service / Consulting'}
           </button>
         ))}
       </div>
-      <div className="g3" style={{marginBottom:10}}>
+      <div className="g3" style={{ marginBottom: 10 }}>
         <Field label="Item Name" required>
-          <input className="input" value={f.name} onChange={e=>upd({name:e.target.value})} placeholder="e.g. Tata Salt 1kg" />
+          <input className="input" value={f.name} onChange={e => upd({ name: e.target.value })} placeholder="e.g. Tata Salt 1kg" />
         </Field>
         <Field label="Unit">
-          <select className="select" value={f.unit} onChange={e=>upd({unit:e.target.value})}>
-            {UNITS.map(u=><option key={u}>{u}</option>)}
+          <select className="select" value={f.unit} onChange={e => upd({ unit: e.target.value })}>
+            {UNITS.map(u => <option key={u}>{u}</option>)}
           </select>
         </Field>
         <Field label="Category">
-          <select className="select" value={f.category} onChange={e=>upd({category:e.target.value})}>
+          <select className="select" value={f.category} onChange={e => upd({ category: e.target.value })}>
             <option value="">— None —</option>
-            {inv_categories.map(c=><option key={c}>{c}</option>)}
+            {inv_categories.map(c => <option key={c}>{c}</option>)}
           </select>
         </Field>
       </div>
-      <div className="g3" style={{marginBottom:10}}>
-        <Field label="Selling Rate ₹"><input className="input" type="number" value={f.rate} onChange={e=>upd({rate:e.target.value})} min="0" step="0.01" /></Field>
-        <Field label="MRP ₹"><input className="input" type="number" value={f.mrp||0} onChange={e=>upd({mrp:e.target.value})} min="0" /></Field>
-        {f.item_type!=='service'&&<Field label="Stock Qty"><input className="input" type="number" value={f.stock} onChange={e=>upd({stock:e.target.value})} min="0" /></Field>}
+      <div className="g3" style={{ marginBottom: 10 }}>
+        <Field label="Selling Rate ₹"><input className="input" type="number" value={f.rate} onChange={e => upd({ rate: e.target.value })} min="0" step="0.01" /></Field>
+        <Field label="MRP ₹"><input className="input" type="number" value={f.mrp || 0} onChange={e => upd({ mrp: e.target.value })} min="0" /></Field>
+        {f.item_type !== 'service' && <Field label="Stock Qty"><input className="input" type="number" value={f.stock} onChange={e => upd({ stock: e.target.value })} min="0" /></Field>}
       </div>
-      {isReg&&(
-        <div className="g3" style={{marginBottom:10}}>
+      {isReg && (
+        <div className="g3" style={{ marginBottom: 10 }}>
           <Field label="GST Rate">
-            <select className="select" value={f.gst_rate} onChange={e=>upd({gst_rate:Number(e.target.value)})}>
-              {[0,5,12,18,28].map(r=><option key={r} value={r}>{r}%</option>)}
+            <select className="select" value={f.gst_rate} onChange={e => upd({ gst_rate: Number(e.target.value) })}>
+              {[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}
             </select>
           </Field>
-          <Field label="HSN / SAC"><input className="input" value={f.hsn||''} onChange={e=>upd({hsn:e.target.value})} placeholder="e.g. 1701" /></Field>
-          <Field label="Low Stock Alert"><input className="input" type="number" value={f.low_stock_alert??5} onChange={e=>upd({low_stock_alert:Number(e.target.value)})} min="0" /></Field>
+          <Field label="HSN / SAC"><input className="input" value={f.hsn || ''} onChange={e => upd({ hsn: e.target.value })} placeholder="e.g. 1701" /></Field>
+          <Field label="Low Stock Alert"><input className="input" type="number" value={f.low_stock_alert ?? 5} onChange={e => upd({ low_stock_alert: Number(e.target.value) })} min="0" /></Field>
         </div>
       )}
-      <div className="g2" style={{marginBottom:12}}>
+      <div className="g2" style={{ marginBottom: 14 }}>
         <Field label="Barcode / SKU">
-          <div style={{display:'flex',gap:6}}>
-            <input className="input" value={f.barcode||''} onChange={e=>upd({barcode:e.target.value})} placeholder="Auto-gen or type" style={{flex:1}} />
-            <Btn v="acc" sz="sm" onClick={()=>upd({barcode:String(Math.floor(Math.random()*90000000+10000000))})}>Gen</Btn>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input className="input" value={f.barcode || ''} onChange={e => upd({ barcode: e.target.value })} placeholder="Auto-gen or scan barcode" style={{ flex: 1 }} />
+            <Btn v="acc" sz="sm" icon={<QrCode size={13} />} onClick={() => upd({ barcode: String(Math.floor(Math.random() * 90000000 + 10000000)) })}>Gen</Btn>
           </div>
         </Field>
-        <Field label="Godown">
-          <select className="select" value={f.godown||'Main'} onChange={e=>upd({godown:e.target.value})}>
-            {(useStore.getState().godowns||['Main']).map(g=><option key={g}>{g}</option>)}
+        <Field label="Godown Location">
+          <select className="select" value={f.godown || 'Main'} onChange={e => upd({ godown: e.target.value })}>
+            {(useStore.getState().godowns || ['Main']).map(g => <option key={g}>{g}</option>)}
           </select>
         </Field>
       </div>
-      <div style={{display:'flex',gap:8}}>
-        <Btn v="pri" onClick={saveItem}>Save Item</Btn>
-        {f.name&&<Btn v="ghost" sz="sm" onClick={()=>patch({invItemForm:null})}>Cancel</Btn>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Btn v="pri" icon={<Plus size={14} />} onClick={saveItem}>Save Item SKU</Btn>
+        {f.name && <Btn v="ghost" sz="sm" onClick={() => patch({ invItemForm: null })}>Cancel</Btn>}
       </div>
-    </Card>
+    </BezelCard>
   );
 }
+
 
 function ItemTable({ items }) {
   const { patch, save, firm } = useStore();
   const isReg = firm?.gst_registered;
   return (
-    <Table headers={['Name','Rate','Stock','Barcode','Actions']}>
-      {items.map(item=>(
-        <TR key={item.id} className={Number(item.stock)<=Number(item.low_stock_alert??5)?'stock-low':''}>
-          <TD>
-            <div style={{fontWeight:600}}>{item.name}</div>
-            <div style={{display:'flex',gap:4,marginTop:2,flexWrap:'wrap'}}>
-              {item.category&&<Badge v="default">{item.category}</Badge>}
-              {item.godown&&item.godown!=='Main'&&<Badge v="acc">{item.godown}</Badge>}
-              {item.batches?.length>0&&<Badge v="blue">{item.batches.length} batch</Badge>}
-              {isReg&&item.hsn&&<span style={{fontSize:10,color:'var(--tx2)',fontFamily:'var(--ffm)'}}>HSN:{item.hsn}</span>}
-            </div>
-          </TD>
-          <TD right>
-            <div style={{fontWeight:600}}>{fmt(item.rate)}</div>
-            {isReg&&<div style={{fontSize:10,color:'var(--tx2)'}}>GST {item.gst_rate}%</div>}
-          </TD>
-          <TD>
-            <div style={{fontWeight:600,color:Number(item.stock)<=Number(item.low_stock_alert??5)?'var(--red)':'var(--tx)'}}>
-              {item.stock} {item.unit}
-            </div>
-            {Number(item.stock)<=Number(item.low_stock_alert??5)&&<div style={{fontSize:10,color:'var(--red)'}}>Low</div>}
-          </TD>
-          <TD style={{fontFamily:'var(--ffm)',fontSize:11,color:'var(--tx2)'}}>{item.barcode||'—'}</TD>
-          <TD>
-            <div style={{display:'flex',gap:6}}>
-              <Btn v="ghost" sz="sm" onClick={()=>patch({invItemForm:{...item}})}>Edit</Btn>
-              {item.item_type!=='service'&&<Btn v="ghost" sz="sm" onClick={()=>patch({batchItemId:item.id,batchForm:{batch_no:'',mfg_date:'',exp_date:'',qty:0,purchase_rate:0}})} title="Batches">Batches{item.batches?.length>0?` (${item.batches.length})`:''}</Btn>}
-              <Btn v="red" sz="sm" onClick={async()=>{
-                  if(!confirm('Delete '+item.name+'?'))return;
-                  const iid=item.id;
-                  patch(s=>({inventory:s.inventory.filter(i=>i.id!==iid)}));
-                  await save();
-                  toast('Deleted','info');
-                }}>Delete</Btn>
-            </div>
-          </TD>
-        </TR>
-      ))}
-    </Table>
+    <Card flat style={{ padding: 0, overflow: 'hidden' }}>
+      <Table headers={['Item SKU & Category', 'Selling Rate', 'Available Stock', 'Barcode', 'Actions']} fintech>
+        {items.map(item => {
+          const isLow = Number(item.stock) <= Number(item.low_stock_alert ?? 5);
+          return (
+            <TR key={item.id} className={isLow ? 'stock-low' : ''}>
+              <TD>
+                <div style={{ fontWeight: 700, fontSize: 13.5 }}>{item.name}</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {item.category && <Badge v="default">{item.category}</Badge>}
+                  {item.godown && item.godown !== 'Main' && <Badge v="acc">{item.godown}</Badge>}
+                  {item.batches?.length > 0 && <Badge v="blu">{item.batches.length} batches</Badge>}
+                  {isReg && item.hsn && <span style={{ fontSize: 11, color: 'var(--tx3)', fontFamily: 'var(--ffm)' }}>HSN: {item.hsn}</span>}
+                </div>
+              </TD>
+              <TD right mono>
+                <div style={{ fontWeight: 700 }}>{fmt(item.rate)}</div>
+                {isReg && <div style={{ fontSize: 10.5, color: 'var(--tx3)' }}>GST {item.gst_rate}%</div>}
+              </TD>
+              <TD>
+                <div className="num-mono" style={{ fontWeight: 700, color: isLow ? 'var(--red)' : 'var(--tx)' }}>
+                  {item.stock} {item.unit}
+                </div>
+                {isLow && <Badge v="red" dot pulse style={{ marginTop: 2, fontSize: 10 }}>Low Stock</Badge>}
+              </TD>
+              <TD mono style={{ fontSize: 11.5, color: 'var(--tx2)' }}>{item.barcode || '—'}</TD>
+              <TD right>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  <Btn v="ghost" sz="sm" icon={<Edit3 size={13} />} onClick={() => patch({ invItemForm: { ...item } })}>
+                    Edit
+                  </Btn>
+                  {item.item_type !== 'service' && (
+                    <Btn
+                      v="ghost"
+                      sz="sm"
+                      icon={<Layers size={13} />}
+                      onClick={() => patch({ batchItemId: item.id, batchForm: { batch_no: '', mfg_date: '', exp_date: '', qty: 0, purchase_rate: 0 } })}
+                      title="Batches"
+                    >
+                      Batches{item.batches?.length > 0 ? ` (${item.batches.length})` : ''}
+                    </Btn>
+                  )}
+                  <Btn
+                    v="red"
+                    sz="sm"
+                    icon={<Trash2 size={13} />}
+                    onClick={async () => {
+                      if (!confirm('Delete ' + item.name + '?')) return;
+                      const iid = item.id;
+                      patch(s => ({ inventory: s.inventory.filter(i => i.id !== iid) }));
+                      await save();
+                      toast('Deleted ' + item.name, 'info');
+                    }}
+                  />
+                </div>
+              </TD>
+            </TR>
+          );
+        })}
+      </Table>
+    </Card>
   );
 }
+
 
 function BatchModal() {
   const { batchItemId, batchForm, inventory, patch, save } = useStore();

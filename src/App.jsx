@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { useStore } from './store/index.js';
-import Topbar from './components/layout/Topbar.jsx';
+import AppShell from './components/layout/AppShell.jsx';
 import { ToastProvider, Loading } from './components/ui/index.jsx';
 import InvoiceMode from './features/invoice/InvoiceMode.jsx';
 
@@ -62,18 +62,15 @@ function AppInner() {
   );
 
   return (
-    <div style={{minHeight:'100vh',background:'var(--bg)'}}>
-      <Topbar />
-      <main className="page">
-        <Suspense fallback={<Loading />}>
-          {mode==='invoice'   && <InvoiceMode />}
-          {mode==='business'  && <BusinessMode />}
-          {mode==='gst'       && <GSTMode />}
-          {mode==='inventory' && <InventoryMode />}
-          {mode==='accounts'  && <AccountsMode />}
-        </Suspense>
-      </main>
-    </div>
+    <AppShell>
+      <Suspense fallback={<Loading msg="Loading module…" />}>
+        {mode === 'invoice'   && <InvoiceMode />}
+        {mode === 'business'  && <BusinessMode />}
+        {mode === 'gst'       && <GSTMode />}
+        {mode === 'inventory' && <InventoryMode />}
+        {mode === 'accounts'  && <AccountsMode />}
+      </Suspense>
+    </AppShell>
   );
 }
 

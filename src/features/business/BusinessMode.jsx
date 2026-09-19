@@ -1,15 +1,37 @@
 import React from 'react';
 import { useStore } from '../../store/index.js';
 import { fmt, fmtDate, r2 } from '../../engine/calc.js';
-import { Card, Stat, Tabs, Table, TR, TD, Badge, Empty, Btn, Alert } from '../../components/ui/index.jsx';
+import {
+  Card,
+  BezelCard,
+  Stat,
+  Tabs,
+  Table,
+  TR,
+  TD,
+  Badge,
+  Empty,
+  Btn,
+  Alert
+} from '../../components/ui/index.jsx';
+import {
+  TrendingUp,
+  ArrowUpRight,
+  Receipt,
+  Boxes,
+  Users,
+  CreditCard,
+  Activity,
+  Plus
+} from 'lucide-react';
 
 const BIZ_TABS = [
-  ['dash', 'Overview'],
-  ['money', 'Receivables & Cash Flow'],
-  ['reports', 'Financial Reports'],
-  ['txn', 'Transactions'],
-  ['po', 'Purchase Orders'],
-  ['payroll', 'Payroll'],
+  ['dash', 'Overview', <Activity key="a" size={14} />],
+  ['money', 'Receivables & Cash Flow', <Users key="u" size={14} />],
+  ['reports', 'Financial Reports', <TrendingUp key="t" size={14} />],
+  ['txn', 'Transactions', <Receipt key="r" size={14} />],
+  ['po', 'Purchase Orders', <Boxes key="b" size={14} />],
+  ['payroll', 'Payroll', <CreditCard key="c" size={14} />],
 ];
 
 export default function BusinessMode() {
@@ -40,92 +62,111 @@ export default function BusinessMode() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className="hero-pill">
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: netProfit >= 0 ? 'var(--grn)' : 'var(--red)' }} />
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: netProfit >= 0 ? 'var(--grn)' : 'var(--red)',
+                display: 'inline-block'
+              }}
+            />
             Net Margin: {marginPct}%
           </span>
-          <Btn v="ghost" sz="sm" onClick={() => setMode('invoice')}>
-            + New Invoice
+          <Btn v="pri" sz="sm" icon={<Plus size={14} />} onClick={() => setMode('invoice')}>
+            New Invoice
           </Btn>
         </div>
       </div>
 
-      <Tabs tabs={BIZ_TABS} active={bizTab} onChange={t => patch({ bizTab: t })} />
+      <div style={{ marginBottom: 18 }}>
+        <Tabs tabs={BIZ_TABS} active={bizTab} onChange={t => patch({ bizTab: t })} />
+      </div>
 
       {bizTab === 'dash' && (
         <div className="bento-grid">
           {/* Hero Telemetry Tile (Span 7) */}
           <div className="bento-col-7">
-            <Card refract style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)' }}>
-                    Operating Profitability
+            <BezelCard style={{ height: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Activity size={14} style={{ color: 'var(--acc)' }} />
+                      Operating Profitability
+                    </div>
+                    <Badge v={netProfit >= 0 ? 'grn' : 'red'} dot>
+                      {netProfit >= 0 ? 'Profitable' : 'Deficit'}
+                    </Badge>
                   </div>
-                  <span className={`bdg ${netProfit >= 0 ? 'bdg-green' : 'bdg-red'}`}>
-                    {netProfit >= 0 ? 'Profitable' : 'Deficit'}
-                  </span>
+                  <div className="num-mono" style={{ fontSize: 38, fontWeight: 800, letterSpacing: '-0.04em', color: netProfit >= 0 ? 'var(--grn)' : 'var(--red)', lineHeight: 1.1 }}>
+                    {fmt(netProfit)}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--tx2)', marginTop: 8 }}>
+                    Net earnings after {fmt(tP)} procurement and {fmt(tE)} overhead expenses.
+                  </div>
                 </div>
-                <div style={{ fontSize: 36, fontWeight: 800, fontFamily: 'var(--ffm)', letterSpacing: '-0.04em', color: netProfit >= 0 ? 'var(--grn)' : 'var(--red)', lineHeight: 1.1 }}>
-                  {fmt(netProfit)}
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--tx2)', marginTop: 8 }}>
-                  Net earnings after {fmt(tP)} purchases and {fmt(tE)} overheads.
-                </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--bor-subtle)' }}>
-                <div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Gross Revenue</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--tx)', marginTop: 2 }}>{fmt(tS)}</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--tx2)' }}>{fyI.length} orders</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Gross Profit</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--acc)', marginTop: 2 }}>{fmt(grossProfit)}</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--tx2)' }}>Pre-expense</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Profit Margin</div>
-                  <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--ffm)', color: 'var(--tx)', marginTop: 2 }}>{marginPct}%</div>
-                  <div style={{ fontSize: 10.5, color: 'var(--tx2)' }}>Conversion rate</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--bor-subtle)' }}>
+                  <div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Gross Revenue</div>
+                    <div className="num-mono" style={{ fontSize: 16, fontWeight: 800, color: 'var(--tx)', marginTop: 3 }}>{fmt(tS)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 1 }}>{fyI.length} orders recorded</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Gross Profit</div>
+                    <div className="num-mono" style={{ fontSize: 16, fontWeight: 800, color: 'var(--acc)', marginTop: 3 }}>{fmt(grossProfit)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 1 }}>Pre-overhead</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase' }}>Profit Margin</div>
+                    <div className="num-mono" style={{ fontSize: 16, fontWeight: 800, color: 'var(--tx)', marginTop: 3 }}>{marginPct}%</div>
+                    <div style={{ fontSize: 11, color: 'var(--tx2)', marginTop: 1 }}>Yield on sales</div>
+                  </div>
                 </div>
               </div>
-            </Card>
+            </BezelCard>
           </div>
 
           {/* Receivables Radar Tile (Span 5) */}
           <div className="bento-col-5">
-            <Card refract style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx2)' }}>
-                    Receivables Radar
+            <BezelCard style={{ height: '100%' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--tx3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Users size={14} style={{ color: 'var(--red)' }} />
+                      Receivables Radar
+                    </div>
+                    <Badge v="red" dot pulse>
+                      {customersWithDues.length} pending
+                    </Badge>
                   </div>
-                  <span className="bdg bdg-red">{customersWithDues.length} pending</span>
+                  <div className="num-mono" style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--red)', lineHeight: 1.1 }}>
+                    {fmt(outstanding)}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--tx2)', marginTop: 6 }}>
+                    Outstanding customer credit tied up in market accounts.
+                  </div>
                 </div>
-                <div style={{ fontSize: 32, fontWeight: 800, fontFamily: 'var(--ffm)', letterSpacing: '-0.04em', color: 'var(--red)', lineHeight: 1.1 }}>
-                  {fmt(outstanding)}
-                </div>
-                <div style={{ fontSize: 12.5, color: 'var(--tx2)', marginTop: 6 }}>
-                  Total outstanding capital tied with credit clients.
-                </div>
-              </div>
 
-              <div style={{ marginTop: 20 }}>
-                {customersWithDues.slice(0, 2).map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bor-subtle)', fontSize: 12.5 }}>
-                    <span style={{ fontWeight: 600 }}>{c.name}</span>
-                    <span style={{ fontWeight: 700, fontFamily: 'var(--ffm)', color: 'var(--red)' }}>{fmt(c.outstanding)}</span>
+                <div style={{ marginTop: 20 }}>
+                  {customersWithDues.slice(0, 2).map(c => (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--bor-subtle)', fontSize: 12.5 }}>
+                      <span style={{ fontWeight: 600 }}>{c.name}</span>
+                      <span className="num-mono" style={{ fontWeight: 700, color: 'var(--red)' }}>{fmt(c.outstanding)}</span>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 14 }}>
+                    <Btn v="ghost" sz="sm" iconRight={<ArrowUpRight size={13} />} onClick={() => patch({ bizTab: 'money' })} style={{ width: '100%' }}>
+                      Manage Receivables Ledger
+                    </Btn>
                   </div>
-                ))}
-                <div style={{ marginTop: 12 }}>
-                  <Btn v="ghost" sz="sm" onClick={() => patch({ bizTab: 'money' })} style={{ width: '100%' }}>
-                    Manage Receivables →
-                  </Btn>
                 </div>
               </div>
-            </Card>
+            </BezelCard>
           </div>
+
 
           {/* Intelligent Live Activity Stream (Span 8) */}
           <div className="bento-col-8">
@@ -139,7 +180,7 @@ export default function BusinessMode() {
               ) : (
                 <Table headers={['Invoice', 'Customer', 'Date', 'Amount', 'Status']} fintech>
                   {invoices.slice(0, 8).map(inv => (
-                    <TR key={inv.id} onClick={() => { patch({ viewInv: inv, tab: 'view' }); setMode('invoice'); }}>
+                    <TR key={inv.id} onClick={() => { patch({ viewInv: inv, tab: 'list' }); setMode('invoice'); }}>
                       <TD mono style={{ color: 'var(--acc)', fontWeight: 700 }}>{inv.invoice_no}</TD>
                       <TD>
                         <span style={{ fontWeight: 600 }}>{inv.customer_name || 'Walk-in Customer'}</span>
@@ -147,7 +188,7 @@ export default function BusinessMode() {
                       <TD style={{ color: 'var(--tx2)', fontSize: 12 }}>{fmtDate(inv.date)}</TD>
                       <TD right mono style={{ fontWeight: 700 }}>{fmt(inv.total)}</TD>
                       <TD>
-                        <Badge v={inv.status === 'paid' ? 'green' : inv.status === 'unpaid' ? 'red' : 'yellow'}>
+                        <Badge v={inv.status === 'paid' ? 'grn' : inv.status === 'unpaid' ? 'red' : 'ylw'} dot>
                           {inv.status}
                         </Badge>
                       </TD>
