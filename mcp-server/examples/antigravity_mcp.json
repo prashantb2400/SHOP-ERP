@@ -1,0 +1,11 @@
+{
+  "retailflow": {
+    "command": "node",
+    "args": [
+      "/home/prashant/.gemini/antigravity/scratch/SHOP-ERP/mcp-server/bin/cli.js"
+    ],
+    "env": {
+      "RETAILFLOW_DATA_PATH": "/home/prashant/.retailflow/storage.json"
+    }
+  }
+}

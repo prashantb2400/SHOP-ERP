@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "retailflow": {
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp-server/bin/cli.js"],
+      "env": {
+        "RETAILFLOW_DATA_PATH": "${workspaceFolder}/data/storage.json"
+      }
+    }
+  }
+}

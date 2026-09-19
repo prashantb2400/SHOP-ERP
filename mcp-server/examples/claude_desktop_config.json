@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "retailflow": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/SHOP-ERP/mcp-server/bin/cli.js"
+      ],
+      "env": {
+        "RETAILFLOW_DATA_PATH": "~/.retailflow/storage.json",
+        "SUPABASE_URL": "https://your-project.supabase.co",
+        "SUPABASE_KEY": "your-supabase-service-role-or-anon-key",
+        "RETAILFLOW_USER_ID": "your_user_id"
+      }
+    }
+  }
+}
